@@ -240,7 +240,7 @@ namespace MyMail.Services
                     // Is this the header for the message?
                     if (record.IsHeader && record.PartKey == 1)
                     {
-                        // TODO: Handler GroupAddress's
+                        // TODO: Handle GroupAddress
                         // From:
                         mailMessage.FromName = (message.From[0] as MailboxAddress).Name;
                         mailMessage.FromAddress = $"<{(message.From[0] as MailboxAddress).Address}>";

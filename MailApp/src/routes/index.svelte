@@ -61,7 +61,10 @@
 		<p>...waiting</p>
 	{:then number}
 		<div class="container">
-		<div class="title">Inbox</div>	
+		<div class="header">
+			Inbox
+			<div class="actions"><a sveltekit:prefetch href="/message/write">Write</a></div>
+		</div>	
 		{#each inboxItems as item, i}
 			<article>
 				<div class="inboxItem"  on:click={() => handleInboxItemClick(item)}>
@@ -118,7 +121,7 @@
 		order: 1;
 	}
 
-	.title {
+	.header {
 		font-weight:bolder;
 		font-size: var(--font-size-xx-large);
 		color: var(--color-text);
@@ -126,6 +129,31 @@
 		height: 7rem;
 		line-height: 7rem;
 		text-align: center;
+		margin-top: 2rem;
+	}
+
+	.header .actions {
+		font-weight: normal;
+		top: 7rem !important;
+    	right: 3rem !important;
+		position: absolute;
+		display: flex;
+		z-index: 7;
+		font-size: var(--font-size-small);
+		line-height: 1.4;
+	}
+
+	.actions a {
+		border: 1px solid;
+		margin: 0;
+		padding: 0.3em 0.8em;
+		font-weight: 500;
+		text-decoration: none;
+		border-radius: 3rem;
+		white-space: nowrap;
+		background-color: transparent;
+		border-color: var(--color-tertiary);
+    	color: var(--color-tertiary);
 	}
 
 	.avatar {

@@ -21,6 +21,7 @@
 	--rgb-almost-black: 27, 39, 51;
 	--rgb-blue: 80, 162, 255;
 	--rgb-teal: 157, 255, 236;
+	--rgb-purple: 134, 126, 255;
 
 	--rgb-background: rgb(var(--rgb-almost-black));
 	--color-text: rgb(var(--rgb-almost-white));
@@ -28,7 +29,9 @@
 	--color-bg--surface-glint-opaque: rgb(var(--rgb-light-gray));
 	--color-bg--sheet: var(--color-bg--surface-glint-opaque);
 	--color-primary: rgb(var(--rgb-teal));
+	--color-tertiary: rgb(var(--rgb-purple));
 	--color-almost-black: rgb(var(--rgb-almost-black));
+	--color-border--solid: rgb(var(var(--rgb-almost-white)));
 
 	font-size: var(--font-size-base);
 	--font-size-base: 11px;

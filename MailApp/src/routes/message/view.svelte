@@ -9,7 +9,7 @@
         return { props: { message, inboxItem } };
     }
 
-    async function getMessage(inboxItem : InboxItem) : Message {
+    async function getMessage(inboxItem : InboxItem) : Promise<Message> {
         const res = await fetch(`http://localhost:5000/Mail/message/${inboxItem.id}`, {mode: 'cors'});
 		const text = await res.text();
         let msg : Message = JSON.parse(text);
@@ -60,7 +60,7 @@
                 <img src="/img_avatar.png" alt="ProfileImage" class="avatar">
             </div>
             <div class="center">
-                <span class="from">{message.fromName} <span class="to">{message.fromAddress}</span></span>
+                <span class="from">{message.fromName} <span class="to">{message.formAddress}</span></span>
                 <div class="to">to {inboxItem.to}</div>
             </div>
             <div class="right">
