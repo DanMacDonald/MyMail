@@ -5,8 +5,8 @@
 	import ModalItem from '/src/components/ModalItem.svelte'
 
 	let isOpenAvatarPopup: boolean = false;
-	let keys = $keyStore.keys;
-	let bridgeUrl = $keyStore.bridgeUrl;
+	$: keys = $keyStore.keys;
+	let gatewayUrl = $keyStore.gatewayUrl;
 
 	function openAvatarPopup() {
 		isOpenAvatarPopup = true;
@@ -14,21 +14,22 @@
 
 	function logout() {
 		console.log("Logout happened");
-		bridgeUrl = undefined;
+		gatewayUrl = undefined;
 		keys = null;
 		$keyStore.keys = keys;
-		$keyStore.bridgeUrl = bridgeUrl;
+		$keyStore.gatewayUrl = gatewayUrl;
+		$keyStore.weaveMailInboxItems = [];
 		isOpenAvatarPopup = false;
 	}
 
 	function authenticateWithGateway() {
-		console.log(`Auth with gateway ${bridgeUrl}`);
-		if (bridgeUrl == undefined) {
-			bridgeUrl = "mail.pixelsamurai.com"
+		console.log(`Auth with gateway ${gatewayUrl}`);
+		if (gatewayUrl == undefined) {
+			gatewayUrl = "mail.pixelsamurai.com"
 		} else {
-			bridgeUrl = undefined;
+			gatewayUrl = undefined;
 		}
-		$keyStore.bridgeUrl = bridgeUrl;
+		$keyStore.gatewayUrl = gatewayUrl;
 	}
 </script>
 
@@ -55,14 +56,14 @@
 <!-- Avatar pooup -->
 <Modal bind:isOpen={isOpenAvatarPopup}>
 	<div slot="content">
-		<ModalItem imageUrl="/src/lib/header/logout.svg" onClick={logout}>Log out</ModalItem>
 		<ModalItem imageUrl="/static/gateway.svg" onClick={authenticateWithGateway}>
-			{#if bridgeUrl }
-				{bridgeUrl}
+			{#if gatewayUrl }
+			{gatewayUrl}
 			{:else}
-				Email gateway
+			Email gateway
 			{/if}
 		</ModalItem>
+		<ModalItem imageUrl="/src/lib/header/logout.svg" onClick={logout}>Log out</ModalItem>
 	</div>
 </Modal>
 

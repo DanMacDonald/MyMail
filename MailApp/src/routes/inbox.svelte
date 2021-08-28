@@ -14,7 +14,6 @@
 
 	let promise = Promise.resolve($keyStore.inboxItems);
     let isLoadingMessages:boolean = false;
-	let gatewayUrl = "";
 
 	let wallet: any = null;
 	var arweave: any = Arweave.init({
@@ -26,7 +25,6 @@
     let keys = $keyStore.keys;
 	
 	keyStore.subscribe((store) => {
-		console.log("scbscribe changed");
         if (keys != store.keys) {
             keys = store.keys;
             if (keys == null) {
@@ -39,22 +37,7 @@
                     $keyStore.inboxItems = $keyStore.weaveMailInboxItems;
                 }
             }
-        } else if (gatewayUrl != store.gatewayUrl) {
-			gatewayUrl = store.gatewayUrl;
-			if (!store.gatewayUrl) {
-				if ($keyStore.emailInboxItems.length > 0) {
-					$keyStore.emailInboxItems = [];
-					$keyStore.inboxItems = $keyStore.weaveMailInboxItems;
-				}
-			} else {
-				getEmailInboxItems()
-					.then(emailInboxItems => {
-						$keyStore.emailInboxItems = emailInboxItems;
-						mergeInboxItems(<InboxItem[]>emailInboxItems);
-						console.log("email items loaded async");
-					})
-			}
-		}
+        }
     });
 
 	onMount(async () => {
@@ -112,7 +95,6 @@
             let inboxItems: InboxItem[] = $keyStore.inboxItems;
             let itemsToAdd: InboxItem[] = [];
 
-			// O(n^2) lets do it! (Open to better ideas)
             for(let j=0; j<newItems.length; j++) {
                 let newItem = newItems[j];
                 let foundExistingItem = false;
@@ -121,6 +103,7 @@
                     foundExistingItem = newItem.id == item.id || newItem.txid == item.txid;
                     if (foundExistingItem) break;
                 }
+
                 if (foundExistingItem == false) itemsToAdd.push(newItem);
             }
 

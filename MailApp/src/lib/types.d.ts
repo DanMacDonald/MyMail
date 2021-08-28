@@ -18,6 +18,7 @@ export interface InboxItem {
 	contentType: string;
 	timestamp: number;
 	body: string;
+	txid: string;
 }
 
 export interface Message {

@@ -1,15 +1,12 @@
 <script lang="ts">
     import { keyStore } from '$lib/keyStore';
 
-    $: keys = $keyStore.keys;
-
     function onChangedHandler(event: Event) {
         let jwk = (<HTMLInputElement>event.target).files[0];
         let reader = new FileReader();
         reader.readAsText(jwk);
         reader.onload = () => {
-            keys = reader.result.toString();
-            $keyStore.keys = keys;
+            $keyStore.keys = reader.result.toString();;
         };
     }
 </script>
