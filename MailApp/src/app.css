@@ -22,16 +22,20 @@
 	--rgb-blue: 80, 162, 255;
 	--rgb-teal: 157, 255, 236;
 	--rgb-purple: 134, 126, 255;
-
 	--rgb-background: rgb(var(--rgb-almost-black));
+
 	--color-text: rgb(var(--rgb-almost-white));
+	--color-txt--reversed: var(--rgb-background);
 	--color-text--subtle: rgba(var(--rgb-almost-white), 0.66);
 	--color-bg--surface-glint-opaque: rgb(var(--rgb-light-gray));
 	--color-bg--sheet: var(--color-bg--surface-glint-opaque);
 	--color-primary: rgb(var(--rgb-teal));
+	--color-secondary: rgb(var(--rgb-blue));
 	--color-tertiary: rgb(var(--rgb-purple));
 	--color-almost-black: rgb(var(--rgb-almost-black));
 	--color-border--solid: rgb(var(var(--rgb-almost-white)));
+	--color-border: rgba(var(--rgb-almost-white), 0.15);
+	--color-modal-item-hovered: rgba(255, 255, 255, 0.32);
 
 	font-size: var(--font-size-base);
 	--font-size-base: 11px;
@@ -90,7 +94,7 @@ p {
 }
 
 a {
-	color: var(--accent-color);
+	color: var(--color-secondary);
 	text-decoration: none;
 }
 

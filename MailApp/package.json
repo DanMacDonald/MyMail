@@ -1,5 +1,5 @@
 {
-  "name": "~TODO~",
+  "name": "~MyMail~",
   "version": "0.0.1",
   "scripts": {
     "dev": "svelte-kit dev",
@@ -22,6 +22,8 @@
   "dependencies": {
     "@fontsource/fira-mono": "^4.2.2",
     "@lukeed/uuid": "^2.0.0",
-    "cookie": "^0.4.1"
+    "arweave": "^1.10.11",
+    "cookie": "^0.4.1",
+    "svelte-local-storage-store": "^0.2.4"
   }
 }

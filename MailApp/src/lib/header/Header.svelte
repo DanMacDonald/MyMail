@@ -1,5 +1,35 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import { keyStore } from '$lib/keyStore';
+	import Modal from '/src/components/Modal.svelte';
+	import ModalItem from '/src/components/ModalItem.svelte'
+
+	let isOpenAvatarPopup: boolean = false;
+	let keys = $keyStore.keys;
+	let bridgeUrl = $keyStore.bridgeUrl;
+
+	function openAvatarPopup() {
+		isOpenAvatarPopup = true;
+	}
+
+	function logout() {
+		console.log("Logout happened");
+		bridgeUrl = undefined;
+		keys = null;
+		$keyStore.keys = keys;
+		$keyStore.bridgeUrl = bridgeUrl;
+		isOpenAvatarPopup = false;
+	}
+
+	function authenticateWithGateway() {
+		console.log(`Auth with gateway ${bridgeUrl}`);
+		if (bridgeUrl == undefined) {
+			bridgeUrl = "mail.pixelsamurai.com"
+		} else {
+			bridgeUrl = undefined;
+		}
+		$keyStore.bridgeUrl = bridgeUrl;
+	}
 </script>
 
 <header>
@@ -9,16 +39,32 @@
 	</div>
 
 	<div>
-		<a sveltekit:prefetch href="/">MyMail</a>
+		<a sveltekit:prefetch href="/weave">MyMail</a>
 	</div>
 	
+{#if keys != null}
 	<div class="corner right">
-		<a sveltekit:prefetch href="/todos">
+		<button on:click={openAvatarPopup}>
 			<div alt="ProfileImage" class="downArrow"></div>
 			<img src="/img_avatar.png" alt="ProfileImage" class="profileImage">
-		</a>
+		</button>
 	</div>
+{/if}
 </header>
+
+<!-- Avatar pooup -->
+<Modal bind:isOpen={isOpenAvatarPopup}>
+	<div slot="content">
+		<ModalItem imageUrl="/src/lib/header/logout.svg" onClick={logout}>Log out</ModalItem>
+		<ModalItem imageUrl="/static/gateway.svg" onClick={authenticateWithGateway}>
+			{#if bridgeUrl }
+				{bridgeUrl}
+			{:else}
+				Email gateway
+			{/if}
+		</ModalItem>
+	</div>
+</Modal>
 
 <style>
 	header {
@@ -28,7 +74,7 @@
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: 9;
+		z-index: 20;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -92,9 +138,11 @@
 		flex-direction: row-reverse;
 	}
 
-	.right a {
+	.right button {
 		display:flex;
 		flex-direction: row-reverse;
+		background-color: transparent;
+		border:0;
 	}
 
 	.profileImage {

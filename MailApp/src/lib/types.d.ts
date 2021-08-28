@@ -17,13 +17,25 @@ export interface InboxItem {
 	isSeen: boolean;
 	contentType: string;
 	timestamp: number;
+	body: string;
 }
 
 export interface Message {
+	id: number;
 	body: string;
-	formAddress: string;
+	fromAddress: string;
 	fromName: string;
 	subject: string;
 	toAddress: string;
 	toName: string;
+	fee: number;
+	amount: number;
+	txid: string;
+	appVersion: string;
+	timestamp: number;
+}
+
+export interface GraphqlQuery {
+	query: DocumentNode | string;
+	variables: Record<string, any> | null;
 }

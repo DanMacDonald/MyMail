@@ -10,17 +10,34 @@
     }
 
     async function getMessage(inboxItem : InboxItem) : Promise<Message> {
-        const res = await fetch(`http://localhost:5000/Mail/message/${inboxItem.id}`, {mode: 'cors'});
-		const text = await res.text();
-        let msg : Message = JSON.parse(text);
-        return msg;
+        if (inboxItem.contentType == "weavemail") {
+            let msg : Message = {
+                id: inboxItem.id,
+                body: inboxItem.body,
+                fromAddress: inboxItem.from,
+                fromName: "<ArweaveId missing>",
+                subject: inboxItem.subject,
+                toAddress: "",
+                toName: "",
+                fee: 0,
+                amount: 0,
+                txid: "",
+                timestamp: inboxItem.timestamp,
+                appVersion: ""
+            }
+            return msg;
+        } else {
+            const res = await fetch(`http://localhost:5000/Mail/message/${inboxItem.id}`, {mode: 'cors'});
+            const text = await res.text();
+            let msg : Message = JSON.parse(text);
+            return msg;
+        }
     }
 </script>
 
 <script lang="ts">
 	import { onMount } from 'svelte';
     import { getFormattedTime } from '$lib/formattedTime';
-
     import type { InboxItem } from '$lib/types';
     export let message : Message;
     export let inboxItem : InboxItem;
@@ -38,15 +55,15 @@
 
 	onMount(async () => {
         console.log(`contentType:${inboxItem.contentType}`);
+        const contentDiv = document.querySelector('.body');
         if (inboxItem.contentType == "multipart/alternative" ) {
             // const frame = document.querySelector('iframe')
             // frame.addEventListener('load', syncHeight)
             // frame.src = `data:text/html;charset=utf-8,${escape(message.body)}`;
-            const contentDiv = document.querySelector('.body');
             contentDiv.innerHTML = unescape(message.body);
-
+        } else if(inboxItem.contentType == "weavemail") {
+            contentDiv.innerHTML = message.body;
         } else {
-            const contentDiv = document.querySelector('.body');
             contentDiv.innerHTML = `<pre>${unescape(message.body)}</pre>`;
         }
 	});
@@ -60,7 +77,7 @@
                 <img src="/img_avatar.png" alt="ProfileImage" class="avatar">
             </div>
             <div class="center">
-                <span class="from">{message.fromName} <span class="to">{message.formAddress}</span></span>
+                <span class="from">{message.fromName} <span class="to">{message.fromAddress}</span></span>
                 <div class="to">to {inboxItem.to}</div>
             </div>
             <div class="right">

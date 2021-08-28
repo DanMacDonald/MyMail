@@ -11,7 +11,7 @@ const config = {
 		// hydrate the <div id="svelte"> element in src/app.html
 		target: '#svelte',
 		adapter: adapter({
-			fallback: '200.html'
+			// fallback: '200.html'
 		}),
 		ssr: false
 	}
