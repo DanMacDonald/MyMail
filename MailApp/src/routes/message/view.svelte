@@ -9,6 +9,30 @@
         return { props: { message, inboxItem } };
     }
 
+    async function markMessageAsSeen(inboxItem: InboxItem) {
+        if (inboxItem.contentType == "weaveMail") {
+
+        } else if (inboxItem.isSeen == false) {
+            var flags = {
+                "isSeen": true,
+                "isRecent": inboxItem.isRecent,
+                "isFlagged": inboxItem.isFlagged
+            }
+
+            var url = `http://localhost:5000/Mail/message/${inboxItem.id}/flags`;
+            const res = await fetch(url, {
+                method: "POST", // *GET, POST, PUT, DELETE, etc.
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(flags)
+            });
+            // const res = await fetch('inbox.json');
+		    const result = await res.text();
+            console.log(`marked as seen ${result}`);
+        }
+    }
+
     async function getMessage(inboxItem : InboxItem) : Promise<Message> {
         if (inboxItem.contentType == "weavemail") {
             let msg : Message = {
@@ -30,6 +54,7 @@
             const res = await fetch(`http://localhost:5000/Mail/message/${inboxItem.id}`, {mode: 'cors'});
             const text = await res.text();
             let msg : Message = JSON.parse(text);
+            markMessageAsSeen(inboxItem);
             return msg;
         }
     }
@@ -66,6 +91,7 @@
         } else {
             contentDiv.innerHTML = `<pre>${unescape(message.body)}</pre>`;
         }
+        markMessageAsSeen(inboxItem);
 	});
 </script>
 

@@ -22,6 +22,6 @@ export function getFormattedTime(timestamp : number) : string {
             return `${hours}:${date.getMinutes()}am`;
         }
     } else {
-        return `${months[date.getMonth()-1]} ${date.getDate()}`;
+        return `${months[date.getMonth()]} ${date.getDate()}`;
     }
 }

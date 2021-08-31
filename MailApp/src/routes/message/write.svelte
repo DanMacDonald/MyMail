@@ -11,8 +11,18 @@
 		subject: "",
 		body: "", id:0, fee:0, amount:0, txid:"", appVersion:"", timestamp:0
 	}
+
+	let isEmail = true;
 	
 	function handleSubmit() {
+		if (isEmail) {
+			submitEmail();
+		} else {
+			submitWeavemail();
+		}
+	}
+
+	function submitEmail() {
 		console.log(message);
 		fetch(`http://localhost:5000/Mail`, 
 		{
@@ -29,6 +39,21 @@
 			goto("/");
 		})
 	}
+
+	function submitWeavemail(){
+
+	}
+
+	function parseToAddress() {
+		console.log(message.toAddress);
+		if (message.toAddress.includes("@")) {
+			isEmail = true;
+		} else {
+			isEmail = message.toAddress.length < 40;
+		}
+	}
+
+
 </script>
 <svelte:head>
 	<title>Write</title>
@@ -42,7 +67,7 @@
 		<form on:submit|preventDefault={() => handleSubmit()}>
             <div class="inputRow">
                 <div class="label">To</div>
-				<div class="inputField"><input bind:value={message.toAddress}></div>
+				<div class="inputField"><input bind:value={message.toAddress} on:input={parseToAddress}></div>
             </div>
             <div class="inputRow">
                 <div class="label">Subject</div>
@@ -52,7 +77,11 @@
                 <textarea class="message" bind:value={message.body} placeholder="Type your message..."></textarea>
             </div>
 			<div class="submitRow">
-				<input class="submitButton" type="submit" value="Send email">
+				{#if isEmail}
+					<input class="submitButton" type="submit" value="Send email">
+				{:else}
+					<input class="submitButton myMail" type="submit" value="Send MyMail">
+				{/if}
 			</div>
         </form>
     </article>
@@ -90,6 +119,10 @@
 		display: flex;
 		border-bottom: 1px solid var(--color-border);
 		padding: 0.2rem 0 0 0;
+	}
+
+	.label {
+		line-height: 3rem;
 	}
 
 	.submitRow {
@@ -141,6 +174,11 @@
     	border-color: var(--color-secondary);
 		color: var(--color-txt--reversed);
 		border-radius: 3rem;
+	}
+
+	.myMail {
+		background: var(--color-tertiary);
+    	border-color: var(--color-tertiary);
 	}
 
 	.inputField {

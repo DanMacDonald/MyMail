@@ -36,6 +36,7 @@
 	--color-border--solid: rgb(var(var(--rgb-almost-white)));
 	--color-border: rgba(var(--rgb-almost-white), 0.15);
 	--color-modal-item-hovered: rgba(255, 255, 255, 0.32);
+	--color-bg--main-thin: rgba(var(--rgb-almost-black), 0.5);
 
 	font-size: var(--font-size-base);
 	--font-size-base: 11px;

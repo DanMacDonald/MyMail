@@ -95,23 +95,31 @@
             let inboxItems: InboxItem[] = $keyStore.inboxItems;
             let itemsToAdd: InboxItem[] = [];
 
+			let isSortNeeded = false;
             for(let j=0; j<newItems.length; j++) {
                 let newItem = newItems[j];
                 let foundExistingItem = false;
                 for(let i =0; i < inboxItems.length; i++) {
                     let item = inboxItems[i];
                     foundExistingItem = newItem.id == item.id || newItem.txid == item.txid;
-                    if (foundExistingItem) break;
+                    if (foundExistingItem) {
+						if (newItem.isSeen != item.isSeen) {
+							item.isSeen = newItem.isSeen;
+							isSortNeeded = true;
+						}
+					} 
                 }
 
                 if (foundExistingItem == false) itemsToAdd.push(newItem);
             }
 
-            if (itemsToAdd.length > 0) {
-                inboxItems = inboxItems.concat(itemsToAdd);
-                inboxItems.sort((item1, item2) => item2.timestamp - item1.timestamp);
-                $keyStore.inboxItems = inboxItems;
-            }
+			if (isSortNeeded || itemsToAdd.length > 0) {
+				if (itemsToAdd.length > 0)
+					inboxItems = inboxItems.concat(itemsToAdd);
+					
+				inboxItems.sort((item1, item2) => item2.timestamp - item1.timestamp);
+				$keyStore.inboxItems = inboxItems;
+			}
         }
     }
 

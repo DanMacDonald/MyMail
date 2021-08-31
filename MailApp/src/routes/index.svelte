@@ -24,6 +24,7 @@
 	});
 
     let keys = $keyStore.keys;
+	let _inboxItems:InboxItem[] = [];
 	
 	keyStore.subscribe((store) => {
 		console.log("scbscribe changed");
@@ -111,6 +112,8 @@
         } else {
             let inboxItems: InboxItem[] = $keyStore.inboxItems;
             let itemsToAdd: InboxItem[] = [];
+			let isSortNeeded = false;
+			let unseen: InboxItem[] = [];
 
 			// O(n^2) lets do it! (Open to better ideas)
             for(let j=0; j<newItems.length; j++) {
@@ -118,23 +121,43 @@
                 let foundExistingItem = false;
                 for(let i =0; i < inboxItems.length; i++) {
                     let item = inboxItems[i];
-                    foundExistingItem = newItem.id == item.id || newItem.txid == item.txid;
-                    if (foundExistingItem) break;
+                    foundExistingItem = newItem.id == item.id;
+                    if (foundExistingItem) {
+						// Update the status of the existing item
+						if (item.isSeen != newItem.isSeen) {
+							isSortNeeded = true;
+							item.isSeen = newItem.isSeen;
+						}
+						break;
+					}
                 }
                 if (foundExistingItem == false) itemsToAdd.push(newItem);
             }
 
             if (itemsToAdd.length > 0) {
                 inboxItems = inboxItems.concat(itemsToAdd);
-                inboxItems.sort((item1, item2) => item2.timestamp - item1.timestamp);
-                $keyStore.inboxItems = inboxItems;
+                isSortNeeded = true;
             }
+
+			if (isSortNeeded) {
+				inboxItems.sort((item1, item2) => {
+					if (item1.isSeen != item2.isSeen) {
+						if (item1.isSeen == false) 
+							return -1;
+						else
+							return 1;
+					}
+					return item2.timestamp - item1.timestamp;
+				});
+                $keyStore.inboxItems = inboxItems;
+			}
+			_inboxItems = inboxItems;
         }
     }
 
     async function getEmailInboxItems() {
         let creds = {
-			emailAddress: "admin@pixelsamurai.com",
+			emailAddress: "admin@pixelsamurai.com", 
 			password: "asdfd",
 		};
 
@@ -214,7 +237,7 @@
 					id: 0,
 					isFlagged: false,
 					isRecent: false,
-					isSeen: false,
+					isSeen: true,
 					contentType: "weavemail",
 					timestamp: timestamp,
 					body: mailParse.body,
@@ -227,7 +250,6 @@
 
         return weaveMailInboxItems;
     }
-
 
 	function handleInboxItemClick(inboxItem: InboxItem) {
 		localStorage.inboxItem = JSON.stringify(inboxItem);
@@ -258,30 +280,34 @@
 				<div class="header">
 					<h1>Inbox</h1>
 					<div class="actions">
-						<a sveltekit:prefetch href="/message/write"
-							>New Message</a
-						>
+						<a sveltekit:prefetch href="/message/write">New Message</a>
 					</div>
 				</div>
-				{#each $keyStore.inboxItems as item, i}
+				{#each _inboxItems as item, i}
+					{#if i == 0 && !item.isSeen}
+						<article><div class="unseen"><span>NEW FOR YOU</span></div></article>
+					{/if}
+					{#if item.isSeen && (i == 0 || !_inboxItems[i-1].isSeen)}
+						<article><div class="previous" >PREVIOUSLY SEEN</div></article>
+					{/if}
 					<article>
-						<div
-							class="inboxItem"
-							on:click={() => handleInboxItemClick(item)}
-						>
-							<div class="left">
-								<img
-									src="img_avatar.png"
-									alt="ProfileImage"
-									class="avatar"
-								/>
-							</div>
-							<div class="center">
-								<span class="subject">{item.subject}</span>
-								<div class="byline">{item.from}</div>
-							</div>
-							<div class="right">
-								{getFormattedTime(item.timestamp)}
+						<div class="inboxItem" on:click={() => handleInboxItemClick(item)} class:seen={item.isSeen}>
+							<div class="itemContainer">
+								<div class="left">
+									<span class:status={item.isSeen == false}></span>
+									<img
+										src="img_avatar.png"
+										alt="ProfileImage"
+										class="avatar"
+									/>
+								</div>
+								<div class="center">
+									<span class="subject">{item.subject}</span>
+									<div class="byline">{item.from}</div>
+								</div>
+								<div class="right">
+									{getFormattedTime(item.timestamp)}
+								</div>
 							</div>
 						</div>
 					</article>
@@ -325,27 +351,62 @@
 		border-bottom-left-radius: 0;
 		border-bottom-right-radius: 0;
 		color: var(--color-text);
-		padding: 1.5rem;
+		margin-left: 3rem;
+		margin-right: 3rem;
 	}
 
 	article {
 		width: 100%;
-		--sheet-padding: 2em;
+		/* --sheet-padding: 2em;
 		padding-left: var(--sheet-padding);
 		padding-right: var(--sheet-padding);
 		margin-left: calc(var(--sheet-padding) * -1);
-		margin-right: calc(var(--sheet-padding) * -1);
+		margin-right: calc(var(--sheet-padding) * -1); */
 		display: block;
 		position: relative;
 		box-sizing: border-box;
 		order: 1;
 	}
 
+	.previous {
+		background-color: var(--color-bg--main-thin);
+		font-weight: bold;
+		font-size: var(--font-size-x-small);
+		line-height: 1.3em;
+		padding: 1.5rem 1rem 1rem 4rem
+	}
+
+	.unseen {
+		position: relative;
+		z-index: 2;
+		margin-right: 4rem;
+		margin-bottom: 1rem;
+	}
+
+	.unseen:before {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 50%;
+		height: 1px;
+		z-index: -1;
+		background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-tertiary) 100%);
+	}
+
+	.unseen span {
+		background: var(--color-bg--sheet);
+		font-weight: bold;
+		font-size: var(--font-size-x-small);
+		line-height: 1.3em;
+		padding: 0rem 1rem 0rem 4rem
+	}
+
 	.header {
 		position: relative;
 		color: var(--color-text);
 		width: 100%;
-		height: 5em;
+		height: 3em;
 		line-height: 5em;
 		text-align: center;
 		margin-top: 2rem;
@@ -365,8 +426,8 @@
 		display: flex;
 		font-size: var(--font-size-small);
 		line-height: 1.4;
-		top: -2rem !important;
-		right: 0rem !important;
+		top: -1rem !important;
+		right: 1rem !important;
 	}
 
 	.actions a {
@@ -414,21 +475,62 @@
 
 	.inboxItem {
 		display: flex;
+		/* justify-content: flex-start; */
+		max-width: 1200px;
+		height: 3.25em;
+		vertical-align: middle;
+		cursor: pointer;
+		padding-left:2em;
+		padding-right:2em;
+	}
+
+	.seen {
+		background-color: var(--color-bg--main-thin);
+	}
+
+	.itemContainer {
+		width:100%;
+		display: flex;
 		justify-content: flex-start;
 		max-width: 1200px;
 		height: 3.25em;
 		vertical-align: middle;
 		cursor: pointer;
+		/* margin-left: 2em; */
 	}
 
-	.inboxItem:hover {
+	.itemContainer:hover {
 		--color-bg--secondary-glint: rgba(var(--rgb-blue), 0.05);
 		background: var(--color-bg--secondary-glint) !important;
 	}
 
 	.inboxItem .left {
 		flex: 0 auto;
-		padding: 0 0.5rem 0;
+		padding: 0 0.5rem 0 1rem;
+	}
+
+	.status {
+		position: relative;
+		height: 1px;
+		width: 1px;
+		clip: rect(1px, 1px, 1px, 1px);
+		overflow: hidden;
+		text-transform: none;
+		white-space: nowrap;
+		--sheet-padding: 2em;
+	}
+
+	.status:before {
+		display: block;
+		filter: invert(59%) sepia(94%) saturate(2285%) hue-rotate(358deg) brightness(100%) contrast(103%);
+		content: ' ';
+		position: absolute;
+		top: 1.3em;
+		left: -0.7em;
+		width: 0.5em;
+		height: 0.5em;
+		background: url("/static/unread.svg") center/100% no-repeat;
+		/* background-image: url("/src/lib/header/back-icon.svg"); */
 	}
 
 	.inboxItem .center {

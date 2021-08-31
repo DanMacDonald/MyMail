@@ -4,6 +4,16 @@
 	import Modal from '/src/components/Modal.svelte';
 	import ModalItem from '/src/components/ModalItem.svelte'
 
+	import * as B64js from "base64-js";
+	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName } from "$lib/myMail";
+	import Arweave from "arweave";
+	var arweave: any = Arweave.init({
+		host: "arweave.net",
+		port: 443,
+		protocol: "https",
+	});
+	let wallet: any = null;
+
 	let isOpenAvatarPopup: boolean = false;
 	$: keys = $keyStore.keys;
 	let gatewayUrl = $keyStore.gatewayUrl;
@@ -30,6 +40,47 @@
 			gatewayUrl = undefined;
 		}
 		$keyStore.gatewayUrl = gatewayUrl;
+	}
+
+	export function b64UrlDecode(b64UrlString: string): string {
+		b64UrlString = b64UrlString.replace(/\-/g, "+").replace(/\_/g, "/");
+		let padding;
+		b64UrlString.length % 4 == 0
+			? (padding = 0)
+			: (padding = 4 - (b64UrlString.length % 4));
+	return b64UrlString.concat("=".repeat(padding));
+		}
+
+	function b64UrlToBuffer(b64UrlString: string): Uint8Array {
+		return new Uint8Array(B64js.toByteArray(b64UrlDecode(b64UrlString)));
+	}
+
+	async function testAuth () {
+		wallet = JSON.parse($keyStore.keys);
+		var address = await arweave.wallets.jwkToAddress(wallet);
+		var result = await fetch(`http://localhost:5000/Mail/authToken?address=${address}`, {
+			method: "GET", // *GET, POST, PUT, DELETE, etc.
+			headers: {
+				"accept": "*/*",
+			}
+		});
+		
+		let data = await result.text();
+		console.log(data);
+		let pk = await getPrivateKey(wallet);
+		var byteData = b64UrlToBuffer(data);
+		var decryptedResult = await window.crypto.subtle.decrypt(
+		    {
+		        name: 'RSA-OAEP'
+		    },
+		    pk,
+		    byteData
+		).catch(error => {
+			console.log(error)
+		}
+		);
+
+		console.log(decryptedResult);
 	}
 </script>
 
@@ -63,6 +114,7 @@
 			Email gateway
 			{/if}
 		</ModalItem>
+		<ModalItem imageUrl="/src/lib/header/plus.svg" onClick={testAuth}>Test Auth</ModalItem>
 		<ModalItem imageUrl="/src/lib/header/logout.svg" onClick={logout}>Log out</ModalItem>
 	</div>
 </Modal>
