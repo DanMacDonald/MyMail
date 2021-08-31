@@ -13,8 +13,44 @@ using System.Text;
 
 namespace MyMail.Services
 {
+
+    public class FlagParams
+    {
+        public bool isSeen { get; set; }
+        public bool isRecent { get; set; }
+        public bool isFlagged { get; set; }
+    }
+
     public static class MailService
     {
+
+        public static bool UpdateMessageFlags(int messageId, FlagParams flags)
+        {
+            var cs = Startup.ConnectionString;
+            using var con = new NpgsqlConnection(cs);
+            con.Open();
+
+            int isSeen = flags.isSeen ? 1 : 0;
+            int isRecent = flags.isRecent ? 1 : 0;
+            int isFlagged = flags.isFlagged ? 1 : 0;
+
+            var sql = $@"UPDATE dbmail_messages
+                SET seen_flag = {isSeen}, recent_flag = {isRecent}, flagged_flag = {isFlagged} WHERE physmessage_id = {messageId}
+                RETURNING *;";
+
+            using var cmd = new NpgsqlCommand(sql, con);
+            using NpgsqlDataReader rdr = cmd.ExecuteReader();
+
+            // Did we update a row?
+            var rowUpdated = false;
+            while (rdr.Read())
+            {
+                rowUpdated = true;
+            }
+
+            return rowUpdated;
+        }
+
         /// <summary>
         /// Send a simple plaintext SMTP mail
         /// </summary>
@@ -42,6 +78,11 @@ namespace MyMail.Services
             }
         }
 
+        /// <summary>
+        /// Retrieves metadata sufficent to display a list of inbox items in the UI
+        /// </summary>
+        /// <param name="emailAddress">Inbox address to retrieve items for</param>
+        /// <returns>List of inboxItemRecord instances</returns>
         public static List<InboxItemRecord> GetInboxItems(string emailAddress)
         {
             var cs = Startup.ConnectionString;
@@ -215,8 +256,8 @@ namespace MyMail.Services
         }
 
         /// <summary>
-        /// Initializes a new SmtpMail object with plain text values after
-        /// parsing the MIME parts queried from Postgress for the message ID
+        /// Initializes a new SmtpMail message object with plain text values
+        /// after parsing the MIME parts queried from Postgress for the messageID
         /// </summary>
         /// <param name="messageId">physicalMessageId of the desired messsage</param>
         /// <returns>An initalized SmtpMail instance</returns>
