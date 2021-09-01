@@ -2,6 +2,16 @@
 	import { goto } from '$app/navigation';
 	import type { Message } from '$lib/types';
 	import { sentMessage } from '$lib/routedEventStore';
+	import { keyStore } from "$lib/keyStore";
+	import Arweave from "arweave";
+	import {getPublicKey, encryptMail } from "$lib/myMail";
+
+	var arweave: any = Arweave.init({
+		host: "arweave.net",
+		port: 443,
+		protocol: "https",
+	});
+
 
 	let message : Message = {
 		toAddress: "",
@@ -9,7 +19,7 @@
 		fromAddress: "admin@pixelsamurai.com",
 		fromName: "Admin",
 		subject: "",
-		body: "", id:0, fee:0, amount:0, txid:"", appVersion:"", timestamp:0
+		body: "", id:0, fee:0, amount:null, txid:"", appVersion:"", timestamp:0
 	}
 
 	let isEmail = true;
@@ -40,8 +50,43 @@
 		})
 	}
 
-	function submitWeavemail(){
+	async function submitWeavemail(){
+		let tokens = 0;
+		let wallet = JSON.parse($keyStore.keys);
+		var address = await arweave.wallets.jwkToAddress(wallet);
 
+		if (message.amount > 0 ) {
+            tokens = arweave.ar.arToWinston(message.amount)
+        }
+
+        var pub_key = await getPublicKey(arweave, message.toAddress);
+
+        if (pub_key == undefined) {
+            alert('Error: Recipient has to send a transaction to the network, first!');
+            return
+        }
+
+		if (address == message.toAddress) {
+			alert('"Error: Cannot send mail to yourself"');
+			return;
+		}
+
+        var content = await encryptMail(arweave, message.body, message.subject, pub_key)
+        console.log(content)
+
+        var tx = await arweave.createTransaction({
+			target: message.toAddress,
+			data: arweave.utils.concatBuffers([content]),
+			quantity: tokens
+		}, wallet);
+
+        tx.addTag('App-Name', 'permamail'); // Add permamail tag
+		tx.addTag('App-Version', '0.0.2'); // Add version tag
+		tx.addTag('Unix-Time', Math.round((new Date()).getTime() / 1000)); // Add Unix timestamp
+
+        await arweave.transactions.sign(tx, wallet)
+        console.log(tx.id)
+        await arweave.transactions.post(tx)
 	}
 
 	function parseToAddress() {
@@ -77,11 +122,14 @@
                 <textarea class="message" bind:value={message.body} placeholder="Type your message..."></textarea>
             </div>
 			<div class="submitRow">
+				<div class="footer">
 				{#if isEmail}
 					<input class="submitButton" type="submit" value="Send email">
 				{:else}
 					<input class="submitButton myMail" type="submit" value="Send MyMail">
+					<div class="amount"><input bind:value={message.amount} placeholder="0 AR" /></div>
 				{/if}
+				</div>
 			</div>
         </form>
     </article>
@@ -89,6 +137,7 @@
 </section>
 
 <style>
+	
 	section {
 		border: 0;
 		padding:0;
@@ -163,10 +212,10 @@
 	.submitButton {
 		cursor:pointer;
 		border: 0;
-		display: inline-block;
 		line-height: 2rem;
     	font-family: inherit;
 		margin: 0;
+		margin-left: 0.5em;
 		padding: 0.3em 0.8em;
 		font-weight: 500;
 		text-decoration: none;
@@ -174,6 +223,8 @@
     	border-color: var(--color-secondary);
 		color: var(--color-txt--reversed);
 		border-radius: 3rem;
+		right: 2em;
+		flex-direction: row-reverse;
 	}
 
 	.myMail {
@@ -193,5 +244,50 @@
 
 	.inputField input {
 		width:100%;
+	}
+
+	.footer {
+		display: flex;
+		flex-direction: row-reverse;
+		height: 1.9em;
+		align-items:flex-end;
+		width:100%;
+	}
+
+	.amount {
+		position: relative;
+		z-index: 0;
+		background-color: var(--rgb-background);
+		color: var(--color-text);
+		margin: 0;
+		font-weight: 500;
+		text-decoration: none;
+		border-radius: 3rem;
+		white-space: nowrap;
+		line-height: 1.8rem;
+    	font-family: inherit;
+		padding: 0.3em 0.8em;
+		padding-left: 2.2em;
+	}
+
+	.amount::before {
+		content: "";
+		width: 2em;
+		height: 2em;
+		position: absolute;
+		left: 0.3em;
+		top: 50%;
+		margin-top: -1em;
+		background: center / 1em no-repeat;
+		background-image: url("/static/ar_coin.svg");
+		filter: invert(99%) sepia(70%) saturate(310%) hue-rotate(294deg)
+			brightness(103%) contrast(85%);
+	}
+
+	.amount input {
+		width: 5em;
+		line-height: 0rem;
+		height: 1.2em;
+		text-align: right;
 	}
 </style>

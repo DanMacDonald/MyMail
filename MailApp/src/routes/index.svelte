@@ -12,6 +12,13 @@
 	import Arweave from "arweave";
 	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName } from "$lib/myMail";
 
+	// Used for testing a cold start
+	// $keyStore.keys = null;
+    // $keyStore.gatewayUrl = "";
+    // $keyStore.weaveMailInboxItems = [];
+    // $keyStore.emailInboxItems = [];
+    // $keyStore.inboxItems = [];
+
 	let promise = Promise.resolve($keyStore.inboxItems);
     let isLoadingMessages:boolean = false;
 	let gatewayUrl = "";
@@ -80,9 +87,10 @@
                     mergeInboxItems(<InboxItem[]>weaveMailItems);
                     console.log("weavemail items loaded async");
                     isLoadingMessages = false;
-                    return null;
+                    return weaveMailItems;
                 });
         } else {
+			_inboxItems = $keyStore.inboxItems;
             // Don't use the loading promise here, we want to load these in the background.
             getWeavemailItems()
                 .then(weaveMailItems => {
@@ -108,6 +116,7 @@
         if (!$keyStore.inboxItems || $keyStore.inboxItems.length == 0) {
             if (newItems.length > 0) {
                 $keyStore.inboxItems = newItems;
+				_inboxItems = newItems;
             }
         } else {
             let inboxItems: InboxItem[] = $keyStore.inboxItems;

@@ -107,15 +107,15 @@
 <!-- Avatar pooup -->
 <Modal bind:isOpen={isOpenAvatarPopup}>
 	<div slot="content">
-		<ModalItem imageUrl="/static/gateway.svg" onClick={authenticateWithGateway}>
+		<ModalItem imageUrl="gateway.svg" onClick={authenticateWithGateway}>
 			{#if gatewayUrl }
 			{gatewayUrl}
 			{:else}
 			Email gateway
 			{/if}
 		</ModalItem>
-		<ModalItem imageUrl="/src/lib/header/plus.svg" onClick={testAuth}>Test Auth</ModalItem>
-		<ModalItem imageUrl="/src/lib/header/logout.svg" onClick={logout}>Log out</ModalItem>
+		<ModalItem imageUrl="plus.svg" onClick={testAuth}>Test Auth</ModalItem>
+		<ModalItem imageUrl="logout.svg" onClick={logout}>Log out</ModalItem>
 	</div>
 </Modal>
 
