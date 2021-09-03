@@ -4,7 +4,7 @@
 </script>
 
 <div class="item" on:click={onClick} >
-    <div class="icon" style="background-image: url({imageUrl});"/>
+    <div class="icon" style="background-image: url('{imageUrl}');"/>
     <span>
         <slot>content</slot>
     </span>

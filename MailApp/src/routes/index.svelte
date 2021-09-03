@@ -265,6 +265,10 @@
 		goto("message/view");
 	}
 
+	function handleNewMessageClick() {
+		goto("message/write");
+	}
+
 	function fadeOutFlash() {
 		$sentMessage = false;
 	}
@@ -289,7 +293,7 @@
 				<div class="header">
 					<h1>Inbox</h1>
 					<div class="actions">
-						<a sveltekit:prefetch href="/message/write">New Message</a>
+						<div on:click={handleNewMessageClick}>New Message</div>
 					</div>
 				</div>
 				{#each _inboxItems as item, i}
@@ -439,7 +443,7 @@
 		right: 1rem !important;
 	}
 
-	.actions a {
+	.actions div {
 		border: 1px solid;
 		margin: 0;
 		padding: 0.3em 0.8em;
@@ -454,7 +458,7 @@
 		position: relative;
 	}
 
-	.actions a::before {
+	.actions div::before {
 		content: " ";
 		width: 1em;
 		height: 1em;

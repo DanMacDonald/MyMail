@@ -25,6 +25,7 @@
     "arweave": "^1.10.11",
     "base64-js": "^1.5.1",
     "cookie": "^0.4.1",
-    "svelte-local-storage-store": "^0.2.4"
+    "svelte-local-storage-store": "^0.2.4",
+    "sveltejs-adapter-ipfs": "^0.1.6"
   }
 }

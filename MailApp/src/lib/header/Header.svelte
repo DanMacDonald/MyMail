@@ -3,10 +3,13 @@
 	import { keyStore } from '$lib/keyStore';
 	import Modal from '/src/components/Modal.svelte';
 	import ModalItem from '/src/components/ModalItem.svelte'
+	import { onMount } from 'svelte';
 
 	import * as B64js from "base64-js";
 	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName } from "$lib/myMail";
 	import Arweave from "arweave";
+	import { goto } from "$app/navigation";
+
 	var arweave: any = Arweave.init({
 		host: "arweave.net",
 		port: 443,
@@ -82,23 +85,27 @@
 
 		console.log(decryptedResult);
 	}
+
+	function backToInbox() {
+		goto("../");
+	}
 </script>
 
 <header>
 	<div class="corner left">
-		<a class:active={$page.path != "/"} class="inboxButton" sveltekit:prefetch href="/">Inbox</a>
-		<a sveltekit:prefetch href="/search" class="search"> Search </a>
+		<div class="inboxButton" class:active={ $page.path != "/"} on:click={backToInbox} >Inbox</div>
+		<a sveltekit:prefetch href="./search" class="search"> Search </a>
 	</div>
 
 	<div>
-		<a sveltekit:prefetch href="/weave">MyMail</a>
+		<a sveltekit:prefetch href="./weave">MyMail</a>
 	</div>
 	
 {#if keys != null}
 	<div class="corner right">
 		<button on:click={openAvatarPopup}>
 			<div alt="ProfileImage" class="downArrow"></div>
-			<img src="/img_avatar.png" alt="ProfileImage" class="profileImage">
+			<div alt="ProfileImage" class="profileImage">
 		</button>
 	</div>
 {/if}
@@ -107,15 +114,15 @@
 <!-- Avatar pooup -->
 <Modal bind:isOpen={isOpenAvatarPopup}>
 	<div slot="content">
-		<ModalItem imageUrl="gateway.svg" onClick={authenticateWithGateway}>
+		<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}gateway.svg" onClick={authenticateWithGateway}>
 			{#if gatewayUrl }
 			{gatewayUrl}
 			{:else}
 			Email gateway
 			{/if}
 		</ModalItem>
-		<ModalItem imageUrl="plus.svg" onClick={testAuth}>Test Auth</ModalItem>
-		<ModalItem imageUrl="logout.svg" onClick={logout}>Log out</ModalItem>
+		<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={testAuth}>Test Auth</ModalItem>
+		<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}logout.svg" onClick={logout}>Log out</ModalItem>
 	</div>
 </Modal>
 
@@ -200,13 +207,15 @@
 
 	.profileImage {
 		vertical-align: middle;
-		width: 50px;
-		height: 50px;
+		width:2em;
+		height:2em;
 		border-radius: 50%;
 		position: relative;
 		z-index: 0;
 		right: 0.75em;
 		color: var(--color-text);
+		background-image: url("/static/img_avatar.png");
+		background-size: 2em 2em;
 	}
 
 	.downArrow {
@@ -266,12 +275,6 @@
 		align-items: center;
 		justify-content: left;
 		width: 100%;
-	}
-
-	.corner img {
-		width: 2em;
-		height: 2em;
-		object-fit: contain;
 	}
 
 </style>

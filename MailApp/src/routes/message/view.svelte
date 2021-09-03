@@ -100,7 +100,7 @@
     <div class="container">
         <div class="header">
             <div class="left">
-                <img src="/img_avatar.png" alt="ProfileImage" class="avatar">
+                <img src="../img_avatar.png" alt="ProfileImage" class="avatar">
             </div>
             <div class="center">
                 <span class="from">{message.fromName} <span class="to">{message.fromAddress}</span></span>
