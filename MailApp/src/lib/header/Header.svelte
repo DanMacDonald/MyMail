@@ -92,23 +92,25 @@
 </script>
 
 <header>
-	<div class="corner left">
-		<div class="inboxButton" class:active={ $page.path != "/"} on:click={backToInbox} >Inbox</div>
-		<a sveltekit:prefetch href="./search" class="search"> Search </a>
-	</div>
+	<div class="container">
+		<div class="corner left">
+			<div class="inboxButton" class:active={ $page.path != "/"} on:click={backToInbox} >Inbox</div>
+			<a sveltekit:prefetch href="./search" class="search"> Search </a>
+		</div>
 
-	<div>
-		<a sveltekit:prefetch href="./weave">MyMail</a>
-	</div>
+		<div>
+			<a sveltekit:prefetch href="./weave">MyMail</a>
+		</div>
 	
-{#if keys != null}
-	<div class="corner right">
-		<button on:click={openAvatarPopup}>
-			<div alt="ProfileImage" class="downArrow"></div>
-			<div alt="ProfileImage" class="profileImage">
-		</button>
+	{#if keys != null}
+		<div class="corner right">
+			<button on:click={openAvatarPopup}>
+				<div alt="ProfileImage" class="downArrow"></div>
+				<div alt="ProfileImage" class="profileImage">
+			</button>
+		</div>
+	{/if}
 	</div>
-{/if}
 </header>
 
 <!-- Avatar pooup -->
@@ -150,6 +152,17 @@
 	header a {
 		color: var(--color-text);
 	}
+
+	.container {
+		position: relative;
+		display: flex;
+		align-items: center;
+		width:100%;
+		max-width: 1100px;
+		flex-direction: column;
+		justify-content: space-between;
+	}
+
 
 	.left {
 		left: 0.5em;
