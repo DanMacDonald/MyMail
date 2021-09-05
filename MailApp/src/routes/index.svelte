@@ -270,7 +270,7 @@
 	}
 
 	function fadeOutFlash() {
-		$sentMessage = false;
+		//$sentMessage = false;
 	}
 </script>
 
@@ -336,6 +336,7 @@
 	section {
 		border: 0;
 		padding: 0;
+		position: relative;
 	}
 	.flashRow {
 		width: 100%;
@@ -343,7 +344,7 @@
 		align-content: center;
 		font-size: var(--font-size-medium);
 		position: absolute;
-		top: 5rem;
+		top: -1rem;
 		z-index: 25;
 	}
 	.flash {

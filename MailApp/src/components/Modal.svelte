@@ -8,8 +8,8 @@
 
 <style>
     div.modal {
-        position: fixed;
-        top: 0;
+        position: absolute;
+        top: -1em;
         left: 0;
         width: 100%;
         height: 100vh;
@@ -25,7 +25,7 @@
     }
     div.backdrop {
         background-color: rgba(0, 0, 0, 0.44);
-        position: absolute;
+        position: fixed;
         width: 100%;
         height: 100%;
     }

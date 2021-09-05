@@ -47,16 +47,16 @@
 		.then(() => {
 			$sentMessage = true;
 			goto("/");
-		})
+		});
 	}
 
 	async function submitWeavemail(){
-		let tokens = 0;
+		let tokens = '0';
 		let wallet = JSON.parse($keyStore.keys);
 		var address = await arweave.wallets.jwkToAddress(wallet);
 
 		if (message.amount > 0 ) {
-            tokens = arweave.ar.arToWinston(message.amount)
+            tokens = arweave.ar.arToWinston(message.amount.toString())
         }
 
         var pub_key = await getPublicKey(arweave, message.toAddress);
@@ -87,6 +87,10 @@
         await arweave.transactions.sign(tx, wallet)
         console.log(tx.id)
         await arweave.transactions.post(tx)
+		.then(() => {
+			$sentMessage = true;
+			goto("/");
+		})
 	}
 
 	function parseToAddress() {

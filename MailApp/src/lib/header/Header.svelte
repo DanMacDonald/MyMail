@@ -110,23 +110,23 @@
 			</button>
 		</div>
 	{/if}
+	<!-- Avatar pooup -->
+	<Modal bind:isOpen={isOpenAvatarPopup}>
+		<div slot="content">
+			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}gateway.svg" onClick={authenticateWithGateway}>
+				{#if gatewayUrl }
+				{gatewayUrl}
+				{:else}
+				Email gateway
+				{/if}
+			</ModalItem>
+			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={testAuth}>Test Auth</ModalItem>
+			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}logout.svg" onClick={logout}>Log out</ModalItem>
+		</div>
+	</Modal>
 	</div>
 </header>
 
-<!-- Avatar pooup -->
-<Modal bind:isOpen={isOpenAvatarPopup}>
-	<div slot="content">
-		<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}gateway.svg" onClick={authenticateWithGateway}>
-			{#if gatewayUrl }
-			{gatewayUrl}
-			{:else}
-			Email gateway
-			{/if}
-		</ModalItem>
-		<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={testAuth}>Test Auth</ModalItem>
-		<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}logout.svg" onClick={logout}>Log out</ModalItem>
-	</div>
-</Modal>
 
 <style>
 	header {
