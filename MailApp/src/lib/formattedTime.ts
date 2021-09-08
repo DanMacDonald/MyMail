@@ -25,3 +25,13 @@ export function getFormattedTime(timestamp : number) : string {
         return `${months[date.getMonth()]} ${date.getDate()}`;
     }
 }
+
+export function getExpireLabel(timestamp : number, days : number) : string {
+    let sentDate = new Date();
+    sentDate.setTime(timestamp);
+    let sentDayOfYear = getDayOfYear(sentDate);
+    let expireDayOfYear = sentDayOfYear + days;
+    let currentDayOfYear = getDayOfYear(new Date());
+    let expireDays = expireDayOfYear - currentDayOfYear;
+    return `${expireDays} days`;
+}

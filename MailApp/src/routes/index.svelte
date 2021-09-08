@@ -5,7 +5,7 @@
 	import { fade } from "svelte/transition";
 	import { goto } from "$app/navigation";
 	import type { InboxItem } from "$lib/types";
-	import { getFormattedTime } from "$lib/formattedTime";
+	import { getFormattedTime, getExpireLabel } from "$lib/formattedTime";
 	import { sentMessage } from "$lib/routedEventStore";
 	import { keyStore } from "$lib/keyStore";
 	import KeyDropper from "/src/components/KeyDropper.svelte";
@@ -270,7 +270,7 @@
 	}
 
 	function fadeOutFlash() {
-		//$sentMessage = false;
+		$sentMessage = false;
 	}
 </script>
 
@@ -300,7 +300,7 @@
 					{#if i == 0 && !item.isSeen}
 						<article><div class="unseen"><span>NEW FOR YOU</span></div></article>
 					{/if}
-					{#if item.isSeen && (i == 0 || !_inboxItems[i-1].isSeen)}
+					{#if gatewayUrl != null && (item.isSeen && (i == 0 || !_inboxItems[i-1].isSeen))}
 						<article><div class="previous" >PREVIOUSLY SEEN</div></article>
 					{/if}
 					<article>
@@ -316,10 +316,19 @@
 								</div>
 								<div class="center">
 									<span class="subject">{item.subject}</span>
-									<div class="byline">{item.from}</div>
+									<div class="byline" class:myMail={item.contentType=="weavemail"}>
+										{item.from}
+									</div>
 								</div>
 								<div class="right">
 									{getFormattedTime(item.timestamp)}
+									<div class="expires">
+										{#if item.contentType == "weavemail"}
+											<img class="infinity" alt="infinity" src ="/static/infinity3.svg" />
+										{:else}
+											expires in {getExpireLabel(item.timestamp,90)}
+										{/if}
+									</div>
 								</div>
 							</div>
 						</div>
@@ -559,11 +568,17 @@
 	}
 
 	.inboxItem .right {
-		padding-top: 1.8rem;
+		padding-top: 1.5rem;
 		padding-right: 1rem;
 		color: var(--color-text--subtle);
 		font-size: var(--font-size-x-small);
 		white-space: nowrap;
+		text-align: right;
+	}
+
+	.inboxItem .expires {
+		color: rgb(var(--rgb-dark-gray));
+		font-size: var(--font-size-xx-small);
 	}
 
 	.subject {
@@ -578,5 +593,45 @@
 		margin: 0 !important;
 		text-overflow: ellipsis;
 		overflow: hidden;
+		padding-left: 1.5em
+	}
+
+	.byline:before {
+		content: " ";
+		width: 1em;
+		height: 1em;
+		position: absolute;
+		color: var(--color-tertiary);
+		top: 2.55em;
+		left: 7em;
+		z-index: 10;
+		background: center / 1em no-repeat;
+		background-image: url("/static/email.svg");
+		/* filter: invert(39%) sepia(91%) saturate(809%) hue-rotate(190deg) brightness(101%) contrast(105%); */
+		filter: invert(99%) sepia(70%) saturate(310%) hue-rotate(294deg)
+			brightness(65%) contrast(85%);
+	}
+
+	.myMail:before {
+		content: " ";
+		width: 1em;
+		height: 1em;
+		position: absolute;
+		color: var(--color-tertiary);
+		top: 2.55em;
+		left: 7em;
+		z-index: 10;
+		background: center / 1em no-repeat;
+		background-image: url("/static/identity2.svg");
+		filter: invert(46%) sepia(49%) saturate(835%) hue-rotate(204deg)
+			brightness(100%) contrast(114%);
+		/* filter: invert(99%) sepia(70%) saturate(310%) hue-rotate(294deg)
+			brightness(75%) contrast(85%); */
+	}
+
+	.infinity {
+		margin-top:0.3em;
+		filter: invert(31%) sepia(2%) saturate(3162%) hue-rotate(197deg) brightness(88%) contrast(83%);
+		height: 0.7em;
 	}
 </style>
