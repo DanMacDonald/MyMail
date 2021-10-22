@@ -15,6 +15,10 @@
 	--column-margin-top: 4rem;
 
 	/* New Styles */
+	--base-space: 1.25em;
+    --half-space: calc(var(--base-space) / 2);
+
+
 	--rgb-gray: 116, 116, 128;
 	--rgb-dark-gray: 90, 90, 100;
 	--rgb-light-gray: 39, 50, 62;
@@ -28,6 +32,7 @@
 	--color-text: rgb(var(--rgb-almost-white));
 	--color-txt--reversed: var(--rgb-background);
 	--color-text--subtle: rgba(var(--rgb-almost-white), 0.66);
+	--color-bg--surface: rgba(var(--rgb-gray), 0.2);
 	--color-bg--surface-glint-opaque: rgb(var(--rgb-light-gray));
 	--color-bg--sheet: var(--color-bg--surface-glint-opaque);
 	--color-primary: rgb(var(--rgb-teal));
@@ -37,6 +42,7 @@
 	--color-border--solid: rgb(var(var(--rgb-almost-white)));
 	--color-border: rgba(var(--rgb-almost-white), 0.15);
 	--color-modal-item-hovered: rgba(255, 255, 255, 0.32);
+	--color-bg--main: rgb(var(--rgb-background));
 	--color-bg--main-thin: rgba(var(--rgb-almost-black), 0.5);
 
 	font-size: var(--font-size-base);

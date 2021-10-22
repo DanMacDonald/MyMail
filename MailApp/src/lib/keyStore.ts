@@ -8,5 +8,6 @@ export const keyStore = writable('keyStore', {
     gatewayUrl: "",
     weaveMailInboxItems: [],
     emailInboxItems: [],
-    inboxItems: []
+    inboxItems: [],
+    isLoggedIn: false
 });

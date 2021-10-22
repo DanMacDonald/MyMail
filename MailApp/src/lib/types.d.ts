@@ -9,6 +9,7 @@ export interface Locals {
 export interface InboxItem {
 	to: string;
 	from: string;
+	fromAddress: string;
 	date: string;
 	subject: string;
 	id: number;

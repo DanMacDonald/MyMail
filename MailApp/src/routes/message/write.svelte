@@ -46,25 +46,31 @@
 		.then(data => console.log(data))
 		.then(() => {
 			$sentMessage = true;
-			goto("/");
+			goto("../");
 		});
 	}
 
 	async function submitWeavemail(){
-		let tokens = '0';
-		let wallet = JSON.parse($keyStore.keys);
-		var address = await arweave.wallets.jwkToAddress(wallet);
 
+		let address = "";
+		let wallet = null;
+		if ($keyStore.keys != null) {
+			wallet = JSON.parse($keyStore.keys);
+			address = await arweave.wallets.jwkToAddress(wallet);
+		} else {
+			address = await window.arweaveWallet.getActiveAddress();
+		}
+
+		let tokens = '0';
 		if (message.amount > 0 ) {
             tokens = arweave.ar.arToWinston(message.amount.toString())
         }
 
-        var pub_key = await getPublicKey(arweave, message.toAddress);
-
-        if (pub_key == undefined) {
-            alert('Error: Recipient has to send a transaction to the network, first!');
-            return
-        }
+		var pub_key = await getPublicKey(arweave, message.toAddress);
+		if (pub_key == undefined) {
+			alert('Error: Recipient has to send a transaction to the network, first!');
+			return
+		}
 
 		if (address == message.toAddress) {
 			alert('"Error: Cannot send mail to yourself"');
@@ -74,27 +80,28 @@
         var content = await encryptMail(arweave, message.body, message.subject, pub_key)
         console.log(content)
 
-        var tx = await arweave.createTransaction({
+		
+		var tx = await arweave.createTransaction({
 			target: message.toAddress,
 			data: arweave.utils.concatBuffers([content]),
 			quantity: tokens
 		}, wallet);
 
-        tx.addTag('App-Name', 'permamail'); // Add permamail tag
+		tx.addTag('App-Name', 'permamail'); // Add permamail tag
 		tx.addTag('App-Version', '0.0.2'); // Add version tag
 		tx.addTag('Unix-Time', Math.round((new Date()).getTime() / 1000)); // Add Unix timestamp
 
-        await arweave.transactions.sign(tx, wallet)
-        console.log(tx.id)
-        await arweave.transactions.post(tx)
+		await arweave.transactions.sign(tx, wallet)
+		console.log(tx.id)
+		await arweave.transactions.post(tx)
 		.then(() => {
 			$sentMessage = true;
-			goto("/");
+			goto("../");
 		})
+	
 	}
 
 	function parseToAddress() {
-		console.log(message.toAddress);
 		if (message.toAddress.includes("@")) {
 			isEmail = true;
 		} else {

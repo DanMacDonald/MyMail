@@ -18,6 +18,7 @@
     // $keyStore.weaveMailInboxItems = [];
     // $keyStore.emailInboxItems = [];
     // $keyStore.inboxItems = [];
+	// $keyStore.isLoggedIn = false;
 
 	let promise = Promise.resolve($keyStore.inboxItems);
     let isLoadingMessages:boolean = false;
@@ -31,12 +32,20 @@
 	});
 
     let keys = $keyStore.keys;
+	let isLoggedIn = $keyStore.isLoggedIn;
 	let _inboxItems:InboxItem[] = [];
 	
 	keyStore.subscribe((store) => {
-		console.log("scbscribe changed");
-        if (keys != store.keys) {
+		console.log(`subscribe changed ${isLoggedIn} ${store.isLoggedIn}`);
+		if (isLoggedIn !== store.isLoggedIn) {
+			isLoggedIn = store.isLoggedIn;
+			if ($keyStore.weaveMailInboxItems.length == 0 && !isLoadingMessages) {
+				pageStartupLogic();
+			}
+		} else if (keys != store.keys) {
             keys = store.keys;
+			isLoggedIn = true;
+			$keyStore.isLoggedIn = true;
             if (keys == null) {
                 $keyStore.inboxItems = [];
             } else {
@@ -71,11 +80,18 @@
 	});
 
     function pageStartupLogic() {
-        if ($keyStore.keys == null) return;
+        if ($keyStore.keys != null) {
+			wallet = JSON.parse($keyStore.keys);
+		} else if ($keyStore.isLoggedIn) {
+			wallet = null;
+		} else {
+			return;
+		}
 
         // Make sure we have a wallet initialized
         console.log("Wallet loaded");
-        wallet = JSON.parse($keyStore.keys);
+
+		promise = Promise.resolve($keyStore.inboxItems);
         
         if (!$keyStore.inboxItems || $keyStore.inboxItems.length == 0) {
             isLoadingMessages = true;
@@ -122,7 +138,6 @@
             let inboxItems: InboxItem[] = $keyStore.inboxItems;
             let itemsToAdd: InboxItem[] = [];
 			let isSortNeeded = false;
-			let unseen: InboxItem[] = [];
 
 			// O(n^2) lets do it! (Open to better ideas)
             for(let j=0; j<newItems.length; j++) {
@@ -131,6 +146,10 @@
                 for(let i =0; i < inboxItems.length; i++) {
                     let item = inboxItems[i];
                     foundExistingItem = newItem.id == item.id;
+					// use txid to compare on-chain messages when available
+					if (foundExistingItem && newItem.txid != null) {
+						foundExistingItem = newItem.txid == item.txid;
+					}
                     if (foundExistingItem) {
 						// Update the status of the existing item
 						if (item.isSeen != newItem.isSeen) {
@@ -196,10 +215,16 @@
 		}
     }
 
-    async function getWeavemailItems() {
-		console.log($keyStore.weaveMailInboxItems);
-		
-		var address = await arweave.wallets.jwkToAddress(wallet);
+	async function getActiveAddress(wallet?) : Promise<string> {
+		if (wallet != null) {
+			return await arweave.wallets.jwkToAddress(wallet);
+		} else if ($keyStore.isLoggedIn) {
+			return await window.arweaveWallet.getActiveAddress();
+		} 
+	}
+
+    async function getWeavemailItems() {		
+		var address = await getActiveAddress(wallet);
 		let json = await getWeavemailTransactions(address);
 		var weaveMailInboxItems = await Promise.all(
             json.data.transactions.edges.map(async function (edge, i) {
@@ -224,23 +249,26 @@
 				var fromName =  await getWalletName(arweave, fromAddress);
 				var fee = arweave.ar.winstonToAr(transaction.reward);
 				var amount = arweave.ar.winstonToAr(transaction.quantity);
+				
+// TODO: Extract this out into a decryptMail that uses arweave or arconnect
+				// var key = await getPrivateKey(wallet);
+                // let mailParse;
 
-				var key = await getPrivateKey(wallet);
-                let mailParse;
-
-                var data = await arweave.transactions.getData(txid);
-                mailParse = JSON.parse(
-                    await arweave.utils.bufferToString(
-                        await decryptMail(arweave,
-                            arweave.utils.b64UrlToBuffer(data),
-                            key
-                        )
-                    )
-                );
+                // var data = await arweave.transactions.getData(txid);
+                // mailParse = JSON.parse(
+                //     await arweave.utils.bufferToString(
+                //         await decryptMail(arweave,
+                //             arweave.utils.b64UrlToBuffer(data),
+                //             key
+                //         )
+                //     )
+                // );
+				let mailParse =  <any> await getMessageJSON(txid, wallet);
 
 				let inboxItem: InboxItem = {
-					to: address,
+					to: "You",
 					from: `${fromName}`,
+					fromAddress: `${fromAddress}`,
 					date: "",
 					subject: mailParse.subject || "null",
 					id: 0,
@@ -260,6 +288,25 @@
         return weaveMailInboxItems;
     }
 
+	async function getMessageJSON(txid : string, wallet) : Promise<any> {
+
+		let data = await arweave.transactions.getData(txid);
+		if (wallet != null) {
+			let key = await getPrivateKey(wallet);
+			console.log(key);
+			let mailParse = JSON.parse(
+				await arweave.utils.bufferToString( 
+					await decryptMail(arweave, arweave.utils.b64UrlToBuffer(data), key)
+				)
+			);
+			return mailParse;
+		} else {
+			let decryptString = await window.arweaveWallet.decrypt(arweave.utils.b64UrlToBuffer(data),{ algorithm: "RSA-OAEP", hash: "SHA-256" });
+			let mailParse = JSON.parse(decryptString);
+			return mailParse;
+		}
+	}
+
 	function handleInboxItemClick(inboxItem: InboxItem) {
 		localStorage.inboxItem = JSON.stringify(inboxItem);
 		goto("message/view");
@@ -278,7 +325,7 @@
 	<title>Inbox</title>
 </svelte:head>
 <section>
-	{#if keys == null}
+	{#if $keyStore.isLoggedIn == false}
 		<KeyDropper />
 	{:else}
 		{#if $sentMessage}
@@ -324,7 +371,7 @@
 									{getFormattedTime(item.timestamp)}
 									<div class="expires">
 										{#if item.contentType == "weavemail"}
-											<img class="infinity" alt="infinity" src ="/static/infinity3.svg" />
+											<img class="infinity" alt="infinity" src ="infinity3.svg" />
 										{:else}
 											expires in {getExpireLabel(item.timestamp,90)}
 										{/if}

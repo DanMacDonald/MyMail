@@ -9,6 +9,11 @@
             $keyStore.keys = reader.result.toString();;
         };
     }
+
+    async function onARConnectLogin() {
+        await window.arweaveWallet.connect(["DECRYPT", "ENCRYPT", "ACCESS_ADDRESS", "SIGN_TRANSACTION", "ACCESS_PUBLIC_KEY" ]);
+        $keyStore.isLoggedIn = true;
+    }
 </script>
 
 <section>
@@ -20,6 +25,12 @@
         />
         <div id="desc">Drop a keyfile to login.</div>
     </div>
+    <div class="or-block">
+        or use
+    </div>
+    <button on:click={onARConnectLogin} class="arconnect">
+        ARConnect to login
+    </button>
 </section>
 
 <style>
@@ -52,5 +63,38 @@
 
     .file-input:hover {
         background-color: var(--color-bg--sheet);
+    }
+
+    .or-block {
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        margin: auto;
+        max-width: 300px;
+        height:50px;
+    }
+
+    .arconnect {
+        background-color: transparent;
+        height: 50px;
+        border-radius: 5px;
+        border: 2px solid #62666f;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        margin: auto;
+        width: 300px;
+        max-width: 300px;
+        font-size: var(--font-size-medium);
+        color: var(--color-text);
+    }
+
+    .arconnect:hover {
+        background-color: var(--color-bg--sheet);
+        cursor: pointer;
     }
 </style>
