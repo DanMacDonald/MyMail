@@ -29,9 +29,12 @@
 		console.log("Logout happened");
 		gatewayUrl = undefined;
 		keys = null;
-		$keyStore.keys = keys;
-		$keyStore.gatewayUrl = gatewayUrl;
+		$keyStore.keys = null;
+		$keyStore.gatewayUrl = "";
 		$keyStore.weaveMailInboxItems = [];
+		$keyStore.emailInboxItems = [];
+		$keyStore.inboxItems = [];
+		$keyStore.isLoggedIn = false;
 		isOpenAvatarPopup = false;
 	}
 
@@ -102,7 +105,7 @@
 			<a sveltekit:prefetch href="./weave">MyMail</a>
 		</div>
 	
-	{#if keys != null}
+	{#if keys != null || $keyStore.isLoggedIn}
 		<div class="corner right">
 			<button on:click={openAvatarPopup}>
 				<div alt="ProfileImage" class="downArrow"></div>
