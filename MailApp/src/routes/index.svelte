@@ -347,7 +347,7 @@
 					{#if i == 0 && !item.isSeen}
 						<article><div class="unseen"><span>NEW FOR YOU</span></div></article>
 					{/if}
-					{#if gatewayUrl != null && (item.isSeen && (i == 0 || !_inboxItems[i-1].isSeen))}
+					{#if gatewayUrl != undefined && (item.isSeen && (i == 0 || !_inboxItems[i-1].isSeen))}
 						<article><div class="previous" >PREVIOUSLY SEEN</div></article>
 					{/if}
 					<article>

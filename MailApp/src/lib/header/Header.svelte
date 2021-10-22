@@ -30,7 +30,7 @@
 		gatewayUrl = undefined;
 		keys = null;
 		$keyStore.keys = null;
-		$keyStore.gatewayUrl = "";
+		$keyStore.gatewayUrl = undefined;
 		$keyStore.weaveMailInboxItems = [];
 		$keyStore.emailInboxItems = [];
 		$keyStore.inboxItems = [];
