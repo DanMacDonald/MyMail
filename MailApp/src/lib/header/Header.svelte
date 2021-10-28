@@ -98,11 +98,14 @@
 	<div class="container">
 		<div class="corner left">
 			<div class="inboxButton" class:active={ $page.path != "/"} on:click={backToInbox} >Inbox</div>
-			<a sveltekit:prefetch href="./search" class="search"> Search </a>
+			<!-- <a sveltekit:prefetch href="./search" class="search"> Search </a> -->
+			<a href="." class="search"> Search </a>
 		</div>
 
-		<div>
-			<a sveltekit:prefetch href="./weave">MyMail</a>
+		<div class="center">
+			<!-- <a sveltekit:prefetch href="./weave">MyMail</a> -->
+			MyMail
+			<div class="demo">(weavemail demo)</div>
 		</div>
 	
 	{#if keys != null || $keyStore.isLoggedIn}
@@ -115,15 +118,18 @@
 	{/if}
 	<!-- Avatar pooup -->
 	<Modal bind:isOpen={isOpenAvatarPopup}>
+		<div slot="header">
+			MENU
+		</div>
 		<div slot="content">
-			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}gateway.svg" onClick={authenticateWithGateway}>
+			<!-- <ModalItem imageUrl="{$page.path == "/" ? "" : "../"}gateway.svg" onClick={authenticateWithGateway}>
 				{#if gatewayUrl }
 				{gatewayUrl}
 				{:else}
 				Email gateway
 				{/if}
 			</ModalItem>
-			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={testAuth}>Test Auth</ModalItem>
+			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={testAuth}>Test Auth</ModalItem> -->
 			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}logout.svg" onClick={logout}>Log out</ModalItem>
 		</div>
 	</Modal>
@@ -207,6 +213,15 @@
 
 	.active {
 		display: inline-block;
+	}
+
+	.center {
+		text-align: center;
+	}
+
+	.demo {
+		color: var(--color-text--subtle);
+		font-size: var(--font-size-xx-small);
 	}
 
 	.right {
