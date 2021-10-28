@@ -138,18 +138,27 @@
             let inboxItems: InboxItem[] = $keyStore.inboxItems;
             let itemsToAdd: InboxItem[] = [];
 			let isSortNeeded = false;
-
+			
 			// O(n^2) lets do it! (Open to better ideas)
             for(let j=0; j<newItems.length; j++) {
+				// Its possible for GraphQL at the gateway to return transactions
+				// that are not actually mined due to its policy of optimistic caching
+				if (newItems[j] == null)
+					continue;
                 let newItem = newItems[j];
                 let foundExistingItem = false;
+
                 for(let i =0; i < inboxItems.length; i++) {
                     let item = inboxItems[i];
-                    foundExistingItem = newItem.id == item.id;
-					// use txid to compare on-chain messages when available
-					if (foundExistingItem && newItem.txid != null) {
+					
+					if (newItem.id == 0 && newItem.txid != null) {
+						// Use txid to compare on-chain messages when available
 						foundExistingItem = newItem.txid == item.txid;
+					} else {
+						// Otherwise compare the message id's
+						foundExistingItem = newItem.id == item.id
 					}
+
                     if (foundExistingItem) {
 						// Update the status of the existing item
 						if (item.isSeen != newItem.isSeen) {
@@ -223,13 +232,22 @@
 		} 
 	}
 
-    async function getWeavemailItems() {		
+	async function getWeavemailItemsParallel() {
 		var address = await getActiveAddress(wallet);
 		let json = await getWeavemailTransactions(address);
-		var weaveMailInboxItems = await Promise.all(
+		console.log(`${json.data.transactions.edges.length} to resolve`);
+
+		var weaveMailInboxItems = await Promise.all<InboxItem>(
             json.data.transactions.edges.map(async function (edge, i) {
 				let txid = edge.node.id;
-                var transaction = await arweave.transactions.get(txid);
+                var transaction = await arweave.transactions.get(txid).catch(err => {
+					console.log(`No Transaction found ${txid} - ${err}`);
+				});
+
+				if (!transaction) {
+					console.log("RETURNING NULL");
+					return null;
+				}
 
 				let timestamp = 0;
 				let appVersion = "";
@@ -250,19 +268,7 @@
 				var fee = arweave.ar.winstonToAr(transaction.reward);
 				var amount = arweave.ar.winstonToAr(transaction.quantity);
 				
-// TODO: Extract this out into a decryptMail that uses arweave or arconnect
-				// var key = await getPrivateKey(wallet);
-                // let mailParse;
-
-                // var data = await arweave.transactions.getData(txid);
-                // mailParse = JSON.parse(
-                //     await arweave.utils.bufferToString(
-                //         await decryptMail(arweave,
-                //             arweave.utils.b64UrlToBuffer(data),
-                //             key
-                //         )
-                //     )
-                // );
+				console.log("requesting decruption " + txid);
 				let mailParse =  <any> await getMessageJSON(txid, wallet);
 
 				let inboxItem: InboxItem = {
@@ -281,10 +287,84 @@
                     txid: txid
 				};
 
+				console.log(inboxItem);
+
 				return inboxItem;
 			}
 		));
 
+		var result : InboxItem[] = [];
+		weaveMailInboxItems.forEach((item) => {
+			if (item) result.push(item);
+		});
+		console.log(result);
+		return result;
+	}
+
+    async function getWeavemailItems() {		
+
+		//if (wallet != null) {
+			return getWeavemailItemsParallel();
+		//}
+
+		var address = await getActiveAddress(wallet);
+		let json = await getWeavemailTransactions(address);
+		console.log(`${json.data.transactions.edges.length} to resolve`);
+
+		let weaveMailInboxItems : InboxItem[] = [];
+
+		let edges = json.data.transactions.edges;
+		for await (const edge of edges) {
+			let txid = edge.node.id;
+			var transaction = await arweave.transactions.get(txid).catch(err => {
+				console.log(`No Transaction found ${txid} - ${err}`);
+			});
+
+			if (!transaction) 
+				continue;
+
+			let timestamp = 0;
+			let appVersion = "";
+
+			// Parse timestamp info from the transaction
+			transaction.get("tags").forEach((tag) => {
+				let key = tag.get("name", { decode: true, string: true });
+				let value = tag.get("value", {
+					decode: true,
+					string: true,
+				});
+				if (key === "Unix-Time") timestamp = parseInt(value) * 1000;
+				if (key === "App-Version") appVersion = value;
+			});
+
+			var fromAddress = await arweave.wallets.ownerToAddress(transaction.owner);
+			var fromName =  await getWalletName(arweave, fromAddress);
+			var fee = arweave.ar.winstonToAr(transaction.reward);
+			var amount = arweave.ar.winstonToAr(transaction.quantity);
+			
+			console.log("requesting decruption " + txid);
+			let mailParse =  <any> await getMessageJSON(txid, wallet);
+
+			let inboxItem: InboxItem = {
+				to: "You",
+				from: `${fromName}`,
+				fromAddress: `${fromAddress}`,
+				date: "",
+				subject: mailParse.subject || "null",
+				id: 0,
+				isFlagged: false,
+				isRecent: false,
+				isSeen: true,
+				contentType: "weavemail",
+				timestamp: timestamp,
+				body: mailParse.body,
+				txid: txid
+			};
+
+			weaveMailInboxItems.push(inboxItem);
+		}
+
+		console.log(weaveMailInboxItems);
         return weaveMailInboxItems;
     }
 
@@ -293,7 +373,6 @@
 		let data = await arweave.transactions.getData(txid);
 		if (wallet != null) {
 			let key = await getPrivateKey(wallet);
-			console.log(key);
 			let mailParse = JSON.parse(
 				await arweave.utils.bufferToString( 
 					await decryptMail(arweave, arweave.utils.b64UrlToBuffer(data), key)
@@ -302,6 +381,7 @@
 			return mailParse;
 		} else {
 			let decryptString = await window.arweaveWallet.decrypt(arweave.utils.b64UrlToBuffer(data),{ algorithm: "RSA-OAEP", hash: "SHA-256" });
+			//console.log(decryptString);
 			let mailParse = JSON.parse(decryptString);
 			return mailParse;
 		}
