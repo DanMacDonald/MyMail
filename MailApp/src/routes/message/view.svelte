@@ -37,7 +37,7 @@
             let msg: Message = {
                 id: inboxItem.id,
                 body: inboxItem.body,
-                fromAddress: inboxItem.fromAddress,
+                fromAddress: inboxItem.fromAddress != inboxItem.from ? inboxItem.fromAddress : "",
                 fromName: inboxItem.from,
                 subject: inboxItem.subject,
                 toAddress: "",
