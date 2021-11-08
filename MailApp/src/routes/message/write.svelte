@@ -22,7 +22,9 @@
 		body: "", id:0, fee:0, amount:null, txid:"", appVersion:"", timestamp:0
 	}
 
-	let isEmail = true;
+	let isEmail = false;
+	let isSendButtonActive = false;
+	let sendButtonLabel = "Send Weavemail"
 	
 	function handleSubmit() {
 		if (isEmail) {
@@ -102,11 +104,9 @@
 	}
 
 	function parseToAddress() {
-		if (message.toAddress.includes("@")) {
-			isEmail = true;
-		} else {
-			isEmail = message.toAddress.length < 40;
-		}
+		let re = /^[a-zA-Z0-9_\-]{43}$/;
+		isSendButtonActive = re.test(message.toAddress);
+		console.log(`isWallet ${isSendButtonActive}`);
 	}
 
 
@@ -137,7 +137,11 @@
 				{#if isEmail}
 					<input class="submitButton" type="submit" value="Send email">
 				{:else}
-					<input class="submitButton myMail" type="submit" value="Send MyMail">
+					{#if isSendButtonActive}
+						<input class="submitButton myMail" type="submit" value="Send Weavemail">
+					{:else}
+						<div class="submitButton disabled">{sendButtonLabel}</div>
+					{/if}
 					<div class="amount"><input bind:value={message.amount} placeholder="0 AR" /></div>
 				{/if}
 				</div>
@@ -241,6 +245,11 @@
 	.myMail {
 		background: var(--color-tertiary);
     	border-color: var(--color-tertiary);
+	}
+
+	.disabled {
+		background:var(--color-border);
+		cursor:default;
 	}
 
 	.inputField {
