@@ -576,6 +576,7 @@
 		display: flex;
 		font-size: var(--font-size-small);
 		line-height: 1.4;
+		cursor: pointer;
 		top: -1rem !important;
 		right: 1rem !important;
 	}
