@@ -104,8 +104,8 @@
 
 		<div class="center">
 			<!-- <a sveltekit:prefetch href="./weave">MyMail</a> -->
-			MyMail
-			<div class="demo">(weavemail demo)</div>
+			Weavemail
+			<div class="demo">(alpha test)</div>
 		</div>
 	
 	{#if keys != null || $keyStore.isLoggedIn}
