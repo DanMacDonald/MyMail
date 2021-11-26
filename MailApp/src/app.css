@@ -32,6 +32,7 @@
 	--color-text: rgb(var(--rgb-almost-white));
 	--color-txt--reversed: var(--rgb-background);
 	--color-text--subtle: rgba(var(--rgb-almost-white), 0.66);
+	--color-bg--secondary-glint: rgba(var(--rgb-blue), 0.05);
 	--color-bg--surface: rgba(var(--rgb-gray), 0.2);
 	--color-bg--surface-glint-opaque: rgb(var(--rgb-light-gray));
 	--color-bg--sheet: var(--color-bg--surface-glint-opaque);
@@ -44,6 +45,7 @@
 	--color-modal-item-hovered: rgba(255, 255, 255, 0.32);
 	--color-bg--main: rgb(var(--rgb-background));
 	--color-bg--main-thin: rgba(var(--rgb-almost-black), 0.5);
+	--color-bg--main-thick: rgba(var(--rgb-almost-black), 0.95);
 
 	font-size: var(--font-size-base);
 	--font-size-base: 11px;
@@ -76,11 +78,11 @@ body::before {
 	top: 0;
 	left: 10vw;
 	z-index: -1;
-	background: radial-gradient(
+	/* background: radial-gradient(
 		50% 50% at 50% 50%,
 		var(--pure-white) 0%,
 		rgba(255, 255, 255, 0) 100%
-	);
+	); */
 	opacity: 0.05;
 }
 

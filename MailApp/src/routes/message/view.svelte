@@ -147,6 +147,15 @@
             </div>
         </div>
     </div>
+    <div class="page-toolbar">
+        <div class="content1">
+            <span class="item">
+                <div class="action">
+                    Reply Now
+                </div>
+            </span>
+        </div>
+    </div>
 </section>
 
 <style>
@@ -169,14 +178,12 @@
         align-items: stretch;
         background: var(--color-bg--sheet);
         box-shadow: 0 0 3rem var(--color-almost-black);
-        min-height: 35rem;
+        min-height: 10rem;
         margin-top: 1.2em;
         margin-bottom: 0;
         border-radius: 1.5em;
-        /* border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0; */
         color: var(--color-text);
-        padding: 0;
+        padding-bottom: 5em;
     }
 
     .header {
@@ -338,7 +345,58 @@
         margin: 0;
     }
 
-   
+    .page-toolbar {
+        position: sticky;
+        max-width: 12rem;
+        margin-left: auto;
+        margin-right: auto;
+        bottom: 0;
+        padding: 1rem 0;
+        z-index: 8;
+        border-radius: 3rem 3rem 0 0;
+    }
+
+    .content1 {
+        padding: 0.5rem;
+        background: linear-gradient(135deg, var(--color-bg--secondary-glint) 0%, var(--color-bg--secondary-glint) 80%) var(--color-bg--main-thick);
+        border-radius: 1.6rem;
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .page-toolbar .item {
+        height:5rem;
+        width:8rem;
+        font-size: var(--font-size-x-small);
+        color: var(--color-text);
+    }
+
+    .item .action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+        background: none;
+        border: 0;
+        padding: 0.5rem;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+        position: relative;
+        font-size: var(--font-size-x-small);
+        font-weight: 500;
+        border-radius: 1.2rem;
+    }
+
+    .item .action::before {
+        content: "";
+        filter: invert(99%) sepia(70%) saturate(310%) hue-rotate(294deg) brightness(103%) contrast(85%);
+        background: center / 2.2rem no-repeat;
+        background-image: url("/static/reply.svg");
+        width: 4rem;
+        height: 2.5rem;
+    }
 
     .loader,
     .loader:after {
