@@ -6,7 +6,21 @@ function getDayOfYear(date : Date) : number {
     return day;
 }
 
-let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul","Aug", "Sep", "Oct","Nov","Dec"]
+const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",  "Oct", "Nov", "Dec"]
+const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ]
 
 export function getFormattedTime(timestamp : number) : string {
     var date = new Date();
@@ -22,7 +36,7 @@ export function getFormattedTime(timestamp : number) : string {
             return `${hours}:${date.getMinutes()}am`;
         }
     } else {
-        return `${months[date.getMonth()]} ${date.getDate()}`;
+        return `${monthsShort[date.getMonth()]} ${date.getDate()}`;
     }
 }
 
@@ -34,4 +48,10 @@ export function getExpireLabel(timestamp : number, days : number) : string {
     let currentDayOfYear = getDayOfYear(new Date());
     let expireDays = expireDayOfYear - currentDayOfYear;
     return `${expireDays} days`;
+}
+
+export function getFormattedDate(timestamp: number) : string {
+    var date = new Date();
+    date.setTime(timestamp);
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }

@@ -12,6 +12,7 @@ export interface InboxItem {
 	fromAddress: string;
 	date: string;
 	subject: string;
+	threadId: string;
 	id: number;
 	isFlagged: boolean;
 	isRecent: boolean;

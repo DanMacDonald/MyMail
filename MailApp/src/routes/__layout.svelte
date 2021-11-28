@@ -14,7 +14,7 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		padding: 1rem 1rem 0rem 1rem;
+		padding: 1.6rem 1.6rem 0rem 1.6rem;
 		width: 100%;
 		max-width: 1024px;
 		margin: 0 auto;

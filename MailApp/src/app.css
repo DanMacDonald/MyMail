@@ -36,6 +36,7 @@
 	--color-bg--surface: rgba(var(--rgb-gray), 0.2);
 	--color-bg--surface-glint-opaque: rgb(var(--rgb-light-gray));
 	--color-bg--sheet: var(--color-bg--surface-glint-opaque);
+	--color-border--popup: rgba(var(--rgb-almost-black), 0.15);
 	--color-primary: rgb(var(--rgb-teal));
 	--color-secondary: rgb(var(--rgb-blue));
 	--color-tertiary: rgb(var(--rgb-purple));
@@ -52,7 +53,7 @@
 	--font-size-xx-small: 1.1rem;
     --font-size-x-small: 1.2rem;
     --font-size-small: 1.4rem;
-    --font-size-medium: 1.6rem;
+    --font-size-medium: 1.8rem;
     --font-size-large: 1.8rem;
     --font-size-x-large: 2.4rem;
     --font-size-xx-large: 3.4rem;

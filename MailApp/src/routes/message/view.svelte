@@ -64,13 +64,85 @@
 
 <script lang="ts">
     import { onMount } from "svelte";
-    import { getFormattedTime } from "$lib/formattedTime";
+    import { submitWeavemail, getThreadId } from "$lib/myMail";
+    import { getFormattedTime, getFormattedDate } from "$lib/formattedTime";
+    import { scrollToBottom } from '$lib/scrollTo/svelteScrollTo.js';
+    import { sineInOut } from "svelte/easing";
     import type { InboxItem } from "$lib/types";
+    import SubmitRow from '/src/components/SubmitRow.svelte';
+    import ComposeRow from '/src/components/ComposeRow.svelte';
+    import { sentMessage } from '$lib/routedEventStore';
+    import { goto } from '$app/navigation';
+    import Arweave from "arweave";
+	import config from "$lib/arweaveConfig";
+    import { keyStore } from "$lib/keyStore";
+    var arweave: any = Arweave.init(config);
+
     export let message: Message;
     export let inboxItem: InboxItem;
 
+
     let isPermanent = false;
     let promise = Promise.resolve();
+    let isReplying = false;
+    const focus = node => node.focus();
+    let innerHeight;
+    $: options = {
+        easing: sineInOut,
+		offset: -innerHeight,
+		duration: 400,
+        delay: 200
+    }
+
+    $: toAddress = isAddressValid(message.fromAddress) ? message.fromAddress : message.fromName;
+    $: replaySubject =  message.subject ? makeReplySubject(message.subject) : "";
+    $: isValid = toAddress ? isAddressValid(toAddress) : false;
+    let arAmount = null;
+
+    function makeReplySubject(subject: string): string {
+        var upper = subject.toUpperCase();
+        if (upper.startsWith("RE:"))
+            return subject;
+        else 
+            return `Re: ${subject}`;
+    }
+
+    async function onSubmit() {
+        console.log("submit requested");
+
+        // Tidy up the response message of client side styles
+        // so it's suitable for sending
+        const bodyElement = document.querySelector("#replyBody");
+        var doc = document.implementation.createHTMLDocument("");
+        var imported = document.importNode(bodyElement, true);
+        doc.body.append(imported);
+        var replyText = doc.querySelector("#replyText");
+        replyText.removeAttribute("contenteditable");
+        replyText.removeAttribute("style");
+        const messageBody = doc.querySelector("#replyBody").innerHTML;
+        console.log(messageBody);
+        console.log(`toAddress:${toAddress} replySubject:${replaySubject} arAmount:${parseFloat(arAmount)}`);
+    
+        let address = "";
+		let wallet = null;
+		if ($keyStore.keys != null) {
+			wallet = JSON.parse($keyStore.keys);
+			address = await arweave.wallets.jwkToAddress(wallet);
+		} else {
+			address = await window.arweaveWallet.getActiveAddress();
+		}
+
+		if (address == message.toAddress) {
+			alert('"Error: Cannot send mail to yourself"');
+			return;
+		}
+
+		await submitWeavemail(arweave, toAddress, replaySubject, messageBody, parseInt(arAmount), wallet)
+		.then(() => {
+			$sentMessage = true;
+			goto("../");
+		})
+    }
 
     function saveToArweave() {
         isPermanent = true;
@@ -98,14 +170,43 @@
             // frame.src = `data:text/html;charset=utf-8,${escape(message.body)}`;
             contentDiv.innerHTML = unescape(message.body);
         } else if (inboxItem.contentType == "weavemail") {
-            contentDiv.innerHTML = message.body;
+            contentDiv.innerHTML = message.body;;
         } else {
             contentDiv.innerHTML = `<pre>${unescape(message.body)}</pre>`;
         }
         markMessageAsSeen(inboxItem);
     });
-</script>
 
+    async function startReplying() {
+        isReplying = true;
+        scrollToBottom(options);
+        console.log(message);
+        var replyElement = document.getElementById("replyBody");
+        replyElement.innerHTML = `<div id="replyText" style="outline: none;" contenteditable >
+    <br/>
+    <br/>
+</div>
+On ${getFormattedDate(message.timestamp)}, ${message.fromName} wrote:
+<blockquote style="padding-inline-start: 1.5rem;
+margin: 0;
+padding-inline-end: 0;
+border-inline-start: 1px solid rgba( 27, 39, 51, 0.15);">${message.body}</blockquote>`;
+
+        const div = <HTMLElement>replyElement.querySelector("#replyText");
+        setTimeout(function() {
+            div.focus();
+        }, 0);
+
+        getThreadId(message.subject)
+            .then(d => console.log(d));
+    }
+
+    function isAddressValid(address:string):boolean {
+		let re = /^[a-zA-Z0-9_\-]{43}$/;
+		return re.test(address);
+	}
+</script>
+<svelte:window bind:innerHeight />
 <section>
     <div class="title">{inboxItem.subject}</div>
     <div class="container">
@@ -125,11 +226,7 @@
         </div> -->
         <div class="header">
             <div class="left">
-                <img
-                    src="../img_avatar.png"
-                    alt="ProfileImage"
-                    class="avatar"
-                />
+                <img src="../img_avatar.png" alt="ProfileImage" class="avatar"/>
             </div>
             <div class="center">
                 <span class="from"> {message.fromName}
@@ -147,22 +244,56 @@
             </div>
         </div>
     </div>
-    <div class="page-toolbar">
-        <div class="content1">
-            <span class="item">
-                <div class="action">
-                    Reply Now
-                </div>
-            </span>
+    {#if !isReplying}
+        <div class="page-toolbar">
+            <div class="content1">
+                <span class="item">
+                    <div class="action" on:click={startReplying}>
+                        Reply Now
+                    </div>
+                </span>
+            </div>
         </div>
+    {/if}
+    <div class="container hiding" class:visible={isReplying}>
+        <article>
+            <div class="inputRow">
+                <ComposeRow bind:toAddress={toAddress} bind:subject={replaySubject} />
+            </div>
+            <div id="replyBody" class="content reply">
+                <!-- message reply body is injected to make sure it's not picking up svelt markup -->
+            </div>
+            <br/>
+            <div class="inputRow"><SubmitRow on:submit={onSubmit} bind:isMessageReady={isValid} bind:amount={arAmount} /></div>
+        </article>
     </div>
+  
+    
 </section>
 
 <style>
     section {
         border: 0;
         padding: 0;
+        min-height: calc(100vh);
+        padding-bottom: 10rem;
+        margin-bottom: 280px;
     }
+
+    article {
+		display: block;
+		width: 100%;
+        font-size: var(--font-size-small);
+	}
+
+    /* blockquote {
+        border-left: solid 1px gray;
+        margin: 0;
+        padding-block: 0;
+        padding-inline-start: 1.5rem;
+        padding-inline-end: 0;
+        border-inline-start: 1px solid var(--color-border--popup);
+    } */
 
     .title {
         font-weight: bolder;
@@ -178,12 +309,20 @@
         align-items: stretch;
         background: var(--color-bg--sheet);
         box-shadow: 0 0 3rem var(--color-almost-black);
-        min-height: 10rem;
+        min-height: 35rem;
         margin-top: 1.2em;
         margin-bottom: 0;
         border-radius: 1.5em;
         color: var(--color-text);
+        padding:1.5rem;
         padding-bottom: 5em;
+    }
+
+    .hiding {
+        display: none;
+    }
+    .visible { 
+        display: flex;
     }
 
     .header {
@@ -278,7 +417,7 @@
         width: 3.625em;
         height: 3.625em;
         margin-block-end: 1em;
-        margin-inline-start: 40px;
+        margin-inline-start: 10px;
         margin-inline-end: 0.5em;
     }
 
@@ -295,7 +434,7 @@
 
     .header .right {
         padding-top: 1.8rem;
-        padding-right: 5rem;
+        padding-right: 3.5rem;
         color: var(--color-text--subtle);
         font-size: var(--font-size-x-small);
         white-space: nowrap;
@@ -322,8 +461,21 @@
         color: var(--color-txt--on-message-content);
         border-radius: 0 1.5em 1.5em 1.5em;
         padding: 2rem;
-        margin: 0em 4em 0 5em;
-        font-size: var(--font-size-small);
+        margin: 0em 2em 0 3.5em;
+        font-size: var(--font-size-medium);
+        line-height: 1.4em;
+    }
+
+    .content div {
+        outline: none;
+    }
+
+    .reply {
+        min-height: 13em;
+    }
+
+    .inputRow {
+        margin: 0em 2em 0 3.5em;
     }
 
     .avatar {

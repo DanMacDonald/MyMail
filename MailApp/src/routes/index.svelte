@@ -10,7 +10,8 @@
 	import { keyStore } from "$lib/keyStore";
 	import KeyDropper from "/src/components/KeyDropper.svelte";
 	import Arweave from "arweave";
-	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName } from "$lib/myMail";
+	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName, getThreadId } from "$lib/myMail";
+	import config from "$lib/arweaveConfig";
 
 	// Used for testing a cold start
 	// $keyStore.keys = null;
@@ -25,11 +26,8 @@
 	let gatewayUrl = "";
 
 	let wallet: any = null;
-	var arweave: any = Arweave.init({
-		host: "arweave.net",
-		port: 443,
-		protocol: "https",
-	});
+	var arweave: any = Arweave.init(config);
+
 
     let keys = $keyStore.keys;
 	let isLoggedIn = $keyStore.isLoggedIn;
@@ -82,9 +80,12 @@
     function pageStartupLogic() {
         if ($keyStore.keys != null) {
 			wallet = JSON.parse($keyStore.keys);
+			console.log(`wallet is ${wallet}`)
 		} else if ($keyStore.isLoggedIn) {
 			wallet = null;
 		} else {
+			console.log("logged out");
+			_inboxItems = [];
 			return;
 		}
 
@@ -234,7 +235,7 @@
 
 	async function getWeavemailItemsParallel() {
 		var address = await getActiveAddress(wallet);
-		let json = await getWeavemailTransactions(address);
+		let json = await getWeavemailTransactions(arweave, address);
 		console.log(`${json.data.transactions.edges.length} to resolve`);
 
 		var weaveMailInboxItems = await Promise.all<InboxItem>(
@@ -270,13 +271,16 @@
 				
 				console.log("requesting decruption " + txid);
 				let mailParse =  <any> await getMessageJSON(txid, wallet);
+				let subject = mailParse.subject || "";
+				let subjectHash = await getThreadId(subject);
 
 				let inboxItem: InboxItem = {
 					to: "You",
 					from: `${fromName}`,
 					fromAddress: `${fromAddress}`,
 					date: "",
-					subject: mailParse.subject || "null",
+					subject: subject,
+					threadId: subjectHash,
 					id: 0,
 					isFlagged: false,
 					isRecent: false,
@@ -308,7 +312,7 @@
 		//}
 
 		var address = await getActiveAddress(wallet);
-		let json = await getWeavemailTransactions(address);
+		let json = await getWeavemailTransactions(arweave, address);
 		console.log(`${json.data.transactions.edges.length} to resolve`);
 
 		let weaveMailInboxItems : InboxItem[] = [];
@@ -351,6 +355,7 @@
 				fromAddress: `${fromAddress}`,
 				date: "",
 				subject: mailParse.subject || "null",
+				threadId: "",
 				id: 0,
 				isFlagged: false,
 				isRecent: false,
@@ -388,6 +393,12 @@
 	}
 
 	function handleInboxItemClick(inboxItem: InboxItem) {
+		// if we're selecting some text on the page, give the user the chance to copy it before opening the item
+		// until we have contact managment, this ends up being the best way to copy a sender address
+		var selection = window.getSelection();
+		if (selection.toString())
+			return;
+		
 		localStorage.inboxItem = JSON.stringify(inboxItem);
 		goto("message/view");
 	}
@@ -746,8 +757,8 @@
 		height: 1em;
 		position: absolute;
 		color: var(--color-tertiary);
-		top: 2.55em;
-		left: 7em;
+		top: 37px;
+		left: 102px;
 		z-index: 10;
 		background: center / 1em no-repeat;
 		background-image: url("/static/identity2.svg");

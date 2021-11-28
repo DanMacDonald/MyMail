@@ -9,12 +9,10 @@
 	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName } from "$lib/myMail";
 	import Arweave from "arweave";
 	import { goto } from "$app/navigation";
+	import config from "$lib/arweaveConfig";
 
-	var arweave: any = Arweave.init({
-		host: "arweave.net",
-		port: 443,
-		protocol: "https",
-	});
+	var arweave: any = Arweave.init(config);
+
 	let wallet: any = null;
 
 	let isOpenAvatarPopup: boolean = false;
@@ -36,6 +34,7 @@
 		$keyStore.inboxItems = [];
 		$keyStore.isLoggedIn = false;
 		isOpenAvatarPopup = false;
+		backToInbox();
 	}
 
 	function authenticateWithGateway() {
@@ -59,6 +58,21 @@
 
 	function b64UrlToBuffer(b64UrlString: string): Uint8Array {
 		return new Uint8Array(B64js.toByteArray(b64UrlDecode(b64UrlString)));
+	}
+
+	async function doTransaction() {
+		wallet = JSON.parse($keyStore.keys);
+		let transaction = await arweave.createTransaction({ data: "asdf" }, wallet);
+		await arweave.transactions.sign(transaction, wallet);
+		console.log(transaction);
+		let uploader = await arweave.transactions.getUploader(transaction);
+		console.log(uploader);
+
+		while (!uploader.isComplete) {
+			await uploader.uploadChunk();
+			console.log(`chunkUploaded: ${uploader.uploadedChunks}/${uploader.totalChunks} %${uploader.pctComplete}`);
+   			console.log(` lastResponseStats: ${uploader.lastResponseStatus}`);
+		}
 	}
 
 	async function testAuth () {
@@ -90,6 +104,7 @@
 	}
 
 	function backToInbox() {
+		console.log("headed back to Inbox");
 		goto("../");
 	}
 </script>
@@ -97,7 +112,7 @@
 <header>
 	<div class="container">
 		<div class="corner left">
-			<div class="inboxButton" class:active={ $page.path != "/"} on:click={backToInbox} >Inbox</div>
+			<div class="inboxButton" class:active={ $page.path != "/" } on:click={backToInbox} >Inbox</div>
 			<!-- <a sveltekit:prefetch href="./search" class="search"> Search </a> -->
 			<a href="." class="search"> Search </a>
 		</div>
@@ -128,8 +143,8 @@
 				{:else}
 				Email gateway
 				{/if}
-			</ModalItem>
-			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={testAuth}>Test Auth</ModalItem> -->
+			</ModalItem>  -->
+			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doTransaction}>Test Auth</ModalItem>
 			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}logout.svg" onClick={logout}>Log out</ModalItem>
 		</div>
 	</Modal>
