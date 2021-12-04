@@ -469,7 +469,7 @@
 										{#if item.subject}{item.subject}{:else}No subject{/if}
 									</span>
 									<div class="byline" class:myMail={item.contentType=="weavemail"}>
-										{item.items[0].fromName} - &lt;{item.items[0].fromAddress}&gt;
+										{item.items[0].fromName} &lt;{item.items[0].fromAddress}&gt;
 									</div>
 								</div>
 								<div class="right">
