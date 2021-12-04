@@ -249,6 +249,7 @@ export async function submitWeavemail(arweave, toAddress, subject, body, amount:
     tx.addTag('App-Name', 'permamail'); // Add permamail tag
     tx.addTag('App-Version', '0.0.2'); // Add version tag
     tx.addTag('Unix-Time', Math.round((new Date()).getTime() / 1000)); // Add Unix timestamp
+    tx.addTag('Composed-By', 'MyMail');
 
     await arweave.transactions.sign(tx, wallet)
     console.log(tx.id)
