@@ -29,9 +29,8 @@
 		keys = null;
 		$keyStore.keys = null;
 		$keyStore.gatewayUrl = undefined;
-		$keyStore.weaveMailInboxItems = [];
-		$keyStore.emailInboxItems = [];
-		$keyStore.inboxItems = [];
+		$keyStore.weaveMailInboxThreads = [];
+		$keyStore.inboxThreads = [];
 		$keyStore.isLoggedIn = false;
 		isOpenAvatarPopup = false;
 		backToInbox();
@@ -114,7 +113,7 @@
 		<div class="corner left">
 			<div class="inboxButton" class:active={ $page.path != "/" } on:click={backToInbox} >Inbox</div>
 			<!-- <a sveltekit:prefetch href="./search" class="search"> Search </a> -->
-			<a href="." class="search"> Search </a>
+			<!-- <a href="." class="search"> Search </a> -->
 		</div>
 
 		<div class="center">

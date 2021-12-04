@@ -6,23 +6,6 @@ export interface Locals {
 	userid: string;
 }
 
-export interface InboxItem {
-	to: string;
-	from: string;
-	fromAddress: string;
-	date: string;
-	subject: string;
-	threadId: string;
-	id: number;
-	isFlagged: boolean;
-	isRecent: boolean;
-	isSeen: boolean;
-	contentType: string;
-	timestamp: number;
-	body: string;
-	txid: string;
-}
-
 export interface Message {
 	id: number;
 	body: string;

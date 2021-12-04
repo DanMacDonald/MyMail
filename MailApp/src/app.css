@@ -53,7 +53,7 @@
 	--font-size-xx-small: 1.1rem;
     --font-size-x-small: 1.2rem;
     --font-size-small: 1.4rem;
-    --font-size-medium: 1.8rem;
+    --font-size-medium: 1.6rem;
     --font-size-large: 1.8rem;
     --font-size-x-large: 2.4rem;
     --font-size-xx-large: 3.4rem;
@@ -63,12 +63,6 @@ body {
 	min-height: 100vh;
 	margin: 0;
 	background-color: var(--rgb-background);
-	/* background: linear-gradient(
-		180deg,
-		var(--primary-color) 0%,
-		var(--secondary-color) 10.45%,
-		var(--tertiary-color) 41.35%
-	); */
 }
 
 body::before {

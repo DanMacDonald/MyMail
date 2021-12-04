@@ -1,10 +1,81 @@
 import * as B64js from "base64-js";
 
+export interface InboxItem {
+	id: number;
+	txid: string;
+	toName: string;
+	toAddress: string;
+	fromName: string;
+	fromAddress: string;
+	body: string;
+	date: string;
+	subject: string;
+	threadId: string;
+	fee: number;
+	amount: number;
+	isFlagged: boolean;
+	isRecent: boolean;
+	isSeen: boolean;
+	contentType: string;
+	appVersion: string;
+	timestamp: number;
+}
+
+export class InboxThread {
+	public id: string;
+	public items: InboxItem[];
+	public timestamp: number;
+	public subject: string;
+    public contentType: string;
+    public isSeen: boolean;
+
+    async init(item: InboxItem) {
+        this.id = await getThreadId(item);
+        this.subject = item.subject;
+        this.items = null;
+        this.contentType = item.contentType;
+        this.isSeen = true;
+        this.addItem(item);
+    }
+
+	addItem(item: InboxItem) {
+		if (!this.items) {
+			this.items = [];
+			this.items.push(item);
+		} else {
+			// insert the item chronologically into a the existing thread
+			let insertIndex = 0;
+            if (item.timestamp > this.items[this.items.length-1].timestamp) {
+                // insert at the end of the item list
+                insertIndex = this.items.length;
+            } else if (item.timestamp < this.items[0].timestamp) {
+                // insert at the beginning of the item list
+                insertIndex = 0;
+            } else {
+                // insert in the middle of the item list
+            }
+            
+			this.items.splice(insertIndex, 0, item);
+		}
+
+        // update properties to make sure they reflect the latest data
+		const recentItem = this.items[this.items.length - 1];
+        this.timestamp = recentItem.timestamp;
+	}
+}
+
+/**
+ * Decrypts an array of encrypted bytes
+ * @param arweave An initialized arweave instance
+ * @param encryptedData `Uint8Array` of data to decrypt
+ * @param privateKey Decryption key
+ * @returns Uint8Array of decrypted bytes
+ */
 export async function decryptMail(
     arweave: any,
     encryptedData: Uint8Array,
     privateKey: CryptoKey
-): Promise<string> {
+): Promise<Uint8Array> {
     // Split up the transaction data into the correct parts
     var symmetricKeyBytes = new Uint8Array(encryptedData.slice(0, 512));
     var mailBytes = new Uint8Array(encryptedData.slice(512));
@@ -145,7 +216,7 @@ export async function getWalletName(arweave, address) {
     const response = res2.data;
 
     if (response.data.transactions.edges.length == 0) {
-        return address;
+        return "No name";
     } else {
         const txid = response.data.transactions.edges[0].node.id;
         const tx = await arweave.transactions.get(txid);
@@ -163,7 +234,7 @@ export async function submitWeavemail(arweave, toAddress, subject, body, amount:
     var pub_key = await getPublicKey(arweave, toAddress);
     if (pub_key == undefined) {
         alert('Error: Recipient has to send a transaction to the network, first!');
-        return
+        return;
     }
 
     var content = await encryptMail(arweave, body, subject, pub_key)
@@ -184,7 +255,12 @@ export async function submitWeavemail(arweave, toAddress, subject, body, amount:
     await arweave.transactions.post(tx)
 }
 
-export async function getThreadId(subjectLine: string) : Promise<string> {
+export async function getThreadId(inboxItem: InboxItem) : Promise<string> {
+
+    // if there's no subject line, create a unique string from the sender+timestamp
+    console.log(inboxItem.subject)
+    var subjectLine = inboxItem.subject || inboxItem.fromAddress + inboxItem.timestamp;
+
     // remove anything in square brackets
     var subject = subjectLine.replace(/(\[.*?\])/g, '');
 
@@ -216,7 +292,7 @@ function b64UrlEncode(b64UrlString: string): string {
     .replace(/\=/g, "");
 }
 
-function bufferTob64(buffer: Uint8Array): string {
+export function bufferTob64(buffer: Uint8Array): string {
   return B64js.fromByteArray(new Uint8Array(buffer));
 }
 

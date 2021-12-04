@@ -4,13 +4,14 @@
 	import { onMount } from "svelte";
 	import { fade } from "svelte/transition";
 	import { goto } from "$app/navigation";
-	import type { InboxItem } from "$lib/types";
 	import { getFormattedTime, getExpireLabel } from "$lib/formattedTime";
 	import { sentMessage } from "$lib/routedEventStore";
 	import { keyStore } from "$lib/keyStore";
 	import KeyDropper from "/src/components/KeyDropper.svelte";
 	import Arweave from "arweave";
-	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName, getThreadId } from "$lib/myMail";
+	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName, getThreadId, InboxThread } from "$lib/myMail";
+	import type { InboxItem } from "$lib/myMail";
+	import { bufferTob64 } from "$lib/myMail";
 	import config from "$lib/arweaveConfig";
 
 	// Used for testing a cold start
@@ -21,7 +22,7 @@
     // $keyStore.inboxItems = [];
 	// $keyStore.isLoggedIn = false;
 
-	let promise = Promise.resolve($keyStore.inboxItems);
+	let promise = Promise.resolve($keyStore.inboxThreads);
     let isLoadingMessages:boolean = false;
 	let gatewayUrl = "";
 
@@ -31,13 +32,13 @@
 
     let keys = $keyStore.keys;
 	let isLoggedIn = $keyStore.isLoggedIn;
-	let _inboxItems:InboxItem[] = [];
+	let _inboxThreads: InboxThread[] = [];
 	
 	keyStore.subscribe((store) => {
 		console.log(`subscribe changed ${isLoggedIn} ${store.isLoggedIn}`);
 		if (isLoggedIn !== store.isLoggedIn) {
 			isLoggedIn = store.isLoggedIn;
-			if ($keyStore.weaveMailInboxItems.length == 0 && !isLoadingMessages) {
+			if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
 				pageStartupLogic();
 			}
 		} else if (keys != store.keys) {
@@ -45,31 +46,16 @@
 			isLoggedIn = true;
 			$keyStore.isLoggedIn = true;
             if (keys == null) {
-                $keyStore.inboxItems = [];
+                $keyStore.inboxThreads = [];
             } else {
                 console.log("isLoadingMessages:" + isLoadingMessages)
-                if ($keyStore.weaveMailInboxItems.length == 0 && !isLoadingMessages) {
+                if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
                     pageStartupLogic();
                 } else {
-                    $keyStore.inboxItems = $keyStore.weaveMailInboxItems;
+                    $keyStore.inboxThreads = $keyStore.weaveMailInboxThreads;
                 }
             }
-        } else if (gatewayUrl != store.gatewayUrl) {
-			gatewayUrl = store.gatewayUrl;
-			if (!store.gatewayUrl) {
-				if ($keyStore.emailInboxItems.length > 0) {
-					$keyStore.emailInboxItems = [];
-					$keyStore.inboxItems = $keyStore.weaveMailInboxItems;
-				}
-			} else {
-				getEmailInboxItems()
-					.then(emailInboxItems => {
-						$keyStore.emailInboxItems = emailInboxItems;
-						mergeInboxItems(<InboxItem[]>emailInboxItems);
-						console.log("email items loaded async");
-					})
-			}
-		}
+        } 
     });
 
 	onMount(async () => {
@@ -85,113 +71,120 @@
 			wallet = null;
 		} else {
 			console.log("logged out");
-			_inboxItems = [];
+			_inboxThreads = [];
 			return;
 		}
 
         // Make sure we have a wallet initialized
         console.log("Wallet loaded");
 
-		promise = Promise.resolve($keyStore.inboxItems);
+		promise = Promise.resolve($keyStore.inboxThreads);
         
-        if (!$keyStore.inboxItems || $keyStore.inboxItems.length == 0) {
+        if (!$keyStore.inboxThreads || $keyStore.inboxThreads.length == 0) {
             isLoadingMessages = true;
             console.log("start loading messages")
             // We don't have any mailItems, use the loading promise to show "Waiting..."
             promise = getWeavemailItems()
-                .then(weaveMailItems => {
-                    $keyStore.weaveMailInboxItems = weaveMailItems;
-                    mergeInboxItems(<InboxItem[]>weaveMailItems);
+                .then(async weaveMailItems => {
+					await mergeInboxItems2(weaveMailItems);
                     console.log("weavemail items loaded async");
                     isLoadingMessages = false;
-                    return weaveMailItems;
+					$keyStore.weaveMailInboxThreads = _inboxThreads;
+
+                    return _inboxThreads;
                 });
         } else {
-			_inboxItems = $keyStore.inboxItems;
+			_inboxThreads = $keyStore.inboxThreads;
             // Don't use the loading promise here, we want to load these in the background.
             getWeavemailItems()
-                .then(weaveMailItems => {
-                    $keyStore.weaveMailInboxItems = weaveMailItems;
-                    mergeInboxItems(<InboxItem[]>weaveMailItems);
+                .then(async weaveMailItems => {
+                    //$keyStore.weaveMailInboxItems = weaveMailItems;
+                    await mergeInboxItems2(<InboxItem[]>weaveMailItems);
+					$keyStore.weaveMailInboxThreads = _inboxThreads;
                     console.log("weavemail items loaded async");
                 })
         }
 
-        if ($keyStore.gatewayUrl && $keyStore.gatewayUrl != null) {
-            getEmailInboxItems()
-                .then(emailInboxItems => {
-                    $keyStore.emailInboxItems = emailInboxItems;
-                    mergeInboxItems(<InboxItem[]>emailInboxItems);
-                    console.log("emails loaded async");
-                });
-        } else {
-            console.log("Skipping emails")
-        }
+        // if ($keyStore.gatewayUrl && $keyStore.gatewayUrl != null) {
+        //     getEmailInboxItems()
+        //         .then(emailInboxItems => {
+        //             //$keyStore.emailInboxItems = emailInboxItems;
+        //             mergeInboxItems(<InboxItem[]>emailInboxItems);
+        //             console.log("emails loaded async");
+        //         });
+        // } else {
+        //     console.log("Skipping emails")
+        // }
     }
 
-    function mergeInboxItems(newItems: InboxItem[] ) {
-        if (!$keyStore.inboxItems || $keyStore.inboxItems.length == 0) {
-            if (newItems.length > 0) {
-                $keyStore.inboxItems = newItems;
-				_inboxItems = newItems;
-            }
-        } else {
-            let inboxItems: InboxItem[] = $keyStore.inboxItems;
-            let itemsToAdd: InboxItem[] = [];
-			let isSortNeeded = false;
-			
-			// O(n^2) lets do it! (Open to better ideas)
-            for(let j=0; j<newItems.length; j++) {
-				// Its possible for GraphQL at the gateway to return transactions
-				// that are not actually mined due to its policy of optimistic caching
-				if (newItems[j] == null)
-					continue;
-                let newItem = newItems[j];
-                let foundExistingItem = false;
+	async function getUniqueThreadId(inboxItem: InboxItem) {
+		var threadId = await getThreadId(inboxItem);
 
-                for(let i =0; i < inboxItems.length; i++) {
-                    let item = inboxItems[i];
-					
-					if (newItem.id == 0 && newItem.txid != null) {
-						// Use txid to compare on-chain messages when available
-						foundExistingItem = newItem.txid == item.txid;
-					} else {
-						// Otherwise compare the message id's
-						foundExistingItem = newItem.id == item.id
-					}
+		// create a sha-256 hash of the threadId + the sender wallet address
+		const encoder = new TextEncoder();
+		const data = encoder.encode(threadId + inboxItem.fromAddress);
+		const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+		const hashArray = new Uint8Array(hashBuffer); // convert buffer to byte array
+		const b64UrlHash = bufferTob64(hashArray);
+		return b64UrlHash;
+	}
 
-                    if (foundExistingItem) {
-						// Update the status of the existing item
-						if (item.isSeen != newItem.isSeen) {
-							isSortNeeded = true;
-							item.isSeen = newItem.isSeen;
-						}
-						break;
-					}
-                }
-                if (foundExistingItem == false) itemsToAdd.push(newItem);
-            }
-
-            if (itemsToAdd.length > 0) {
-                inboxItems = inboxItems.concat(itemsToAdd);
-                isSortNeeded = true;
-            }
-
-			if (isSortNeeded) {
-				inboxItems.sort((item1, item2) => {
-					if (item1.isSeen != item2.isSeen) {
-						if (item1.isSeen == false) 
-							return -1;
-						else
-							return 1;
-					}
-					return item2.timestamp - item1.timestamp;
-				});
-                $keyStore.inboxItems = inboxItems;
+	async function mergeInboxItems2(newItems: InboxItem[]) {
+		let inboxThreads: Record<string, InboxItem[]> = {};
+		let threadOwners: Record<string, string> = {};
+		for(let j=0; j<newItems.length; j++) {
+			let newItem = newItems[j];
+			// Generate a threadId from the subject if there isn't one
+			if (!newItem.threadId) {
+				newItem.threadId = await getUniqueThreadId(newItem);
 			}
-			_inboxItems = inboxItems;
-        }
-    }
+			if (!inboxThreads[newItem.threadId]) {
+				// Create a new thread for the item if there isn't one already
+				inboxThreads[newItem.threadId] = [newItem];
+				threadOwners[newItem.fromAddress] = newItem.threadId;
+			} else {
+				// Insert the item chronologically into a the existing thread
+				let items = inboxThreads[newItem.threadId];
+				let insertIndex = 0;
+				if (newItem.timestamp > items[0].timestamp) {
+					insertIndex = items.length-1;
+					// Naieve loop, change if it becomes a performance bottleneck
+					for (let k=0; k<items.length-1; k++) {
+						let item = items[k];
+						let nextItem = items[k+1];
+						if (item.timestamp < newItem.timestamp 
+							&& nextItem.timestamp > newItem.timestamp) {
+							insertIndex = k;
+						}
+					}
+				}
+				items.splice(insertIndex, 0, newItem);
+			}
+		}
+
+		var threads:InboxThread[] = [];
+
+		await Promise.all(
+			Object.keys(inboxThreads).map(async (threadId, index) => {
+				const items = inboxThreads[threadId];
+				let newThread = new InboxThread();
+				await newThread.init(items[0]);
+				for(let i = 1; i < items.length; i++) {
+					newThread.addItem(items[i]);
+				}
+				// Override the last items recent flag so it expands its message body in the thread view
+				newThread.items[newThread.items.length-1].isRecent = true;
+				threads.push(newThread);
+			})
+		).then(() => {
+			threads.sort((a,b) => {
+				return b.timestamp - a.timestamp;
+			})
+			_inboxThreads = threads;
+			$keyStore.inboxThreads = _inboxThreads;
+            console.log(_inboxThreads);
+		});
+	}
 
     async function getEmailInboxItems() {
         let creds = {
@@ -269,27 +262,32 @@
 				var fee = arweave.ar.winstonToAr(transaction.reward);
 				var amount = arweave.ar.winstonToAr(transaction.quantity);
 				
-				console.log("requesting decruption " + txid);
+				console.log("requesting decryption " + txid);
 				let mailParse =  <any> await getMessageJSON(txid, wallet);
 				let subject = mailParse.subject || "";
-				let subjectHash = await getThreadId(subject);
-
+				
 				let inboxItem: InboxItem = {
-					to: "You",
-					from: `${fromName}`,
+					toAddress: "",
+					toName: "You",
+					fromName: `${fromName}`,
 					fromAddress: `${fromAddress}`,
 					date: "",
 					subject: subject,
-					threadId: subjectHash,
+					threadId: "",
 					id: 0,
 					isFlagged: false,
 					isRecent: false,
 					isSeen: true,
+					fee: 0,
+					amount: 0,
 					contentType: "weavemail",
 					timestamp: timestamp,
 					body: mailParse.body,
-                    txid: txid
+                    txid: txid,
+					appVersion: ""
 				};
+
+				inboxItem.threadId =  await getUniqueThreadId(inboxItem);
 
 				console.log(inboxItem);
 
@@ -305,7 +303,7 @@
 		return result;
 	}
 
-    async function getWeavemailItems() {		
+    async function getWeavemailItems(): Promise<InboxItem[]> {		
 
 		//if (wallet != null) {
 			return getWeavemailItemsParallel();
@@ -350,8 +348,9 @@
 			let mailParse =  <any> await getMessageJSON(txid, wallet);
 
 			let inboxItem: InboxItem = {
-				to: "You",
-				from: `${fromName}`,
+				toName: "You",
+				fromName: `${fromName}`,
+				toAddress: "",
 				fromAddress: `${fromAddress}`,
 				date: "",
 				subject: mailParse.subject || "null",
@@ -361,6 +360,9 @@
 				isRecent: false,
 				isSeen: true,
 				contentType: "weavemail",
+				fee: 0,
+				amount: 0,
+				appVersion: "",
 				timestamp: timestamp,
 				body: mailParse.body,
 				txid: txid
@@ -378,22 +380,32 @@
 		let data = await arweave.transactions.getData(txid);
 		if (wallet != null) {
 			let key = await getPrivateKey(wallet);
-			let mailParse = JSON.parse(
-				await arweave.utils.bufferToString( 
+			let decryptString = await arweave.utils.bufferToString( 
 					await decryptMail(arweave, arweave.utils.b64UrlToBuffer(data), key)
-				)
-			);
+				);
+			console.log(decryptString);
+			let mailParse = JSON.parse(decryptString);
 			return mailParse;
 		} else {
 			let decryptString = await window.arweaveWallet.decrypt(arweave.utils.b64UrlToBuffer(data),{ algorithm: "RSA-OAEP", hash: "SHA-256" });
-			//console.log(decryptString);
 			let mailParse = JSON.parse(decryptString);
 			return mailParse;
 		}
 	}
 
+	function handleInboxThreadClick(inboxThread: InboxThread) {
+		// If we're selecting some text on the page, give the user the chance to copy it before opening the item
+		// until we have contact managment, this ends up being the best way to copy a sender address
+		var selection = window.getSelection();
+		if (selection.toString())
+			return;
+
+		localStorage.inboxThread = JSON.stringify(inboxThread);
+		goto("/message/viewThread");
+	}
+
 	function handleInboxItemClick(inboxItem: InboxItem) {
-		// if we're selecting some text on the page, give the user the chance to copy it before opening the item
+		// If we're selecting some text on the page, give the user the chance to copy it before opening the item
 		// until we have contact managment, this ends up being the best way to copy a sender address
 		var selection = window.getSelection();
 		if (selection.toString())
@@ -434,15 +446,15 @@
 						<div on:click={handleNewMessageClick}>New Message</div>
 					</div>
 				</div>
-				{#each _inboxItems as item, i}
+				{#each _inboxThreads as item, i}
 					{#if i == 0 && !item.isSeen}
 						<article><div class="unseen"><span>NEW FOR YOU</span></div></article>
 					{/if}
-					{#if gatewayUrl != undefined && (item.isSeen && (i == 0 || !_inboxItems[i-1].isSeen))}
+					{#if gatewayUrl != undefined && (item.isSeen && (i == 0 || !_inboxThreads[i-1].isSeen))}
 						<article><div class="previous" >PREVIOUSLY SEEN</div></article>
 					{/if}
 					<article>
-						<div class="inboxItem" on:click={() => handleInboxItemClick(item)} class:seen={item.isSeen}>
+						<div class="inboxItem" on:click={() => handleInboxThreadClick(item)} class:seen={item.isSeen}>
 							<div class="itemContainer">
 								<div class="left">
 									<span class:status={item.isSeen == false}></span>
@@ -453,9 +465,11 @@
 									/>
 								</div>
 								<div class="center">
-									<span class="subject">{item.subject}</span>
+									<span class="subject">
+										{#if item.subject}{item.subject}{:else}No subject{/if}
+									</span>
 									<div class="byline" class:myMail={item.contentType=="weavemail"}>
-										{item.from}
+										{item.items[0].fromName} - &lt;{item.items[0].fromAddress}&gt;
 									</div>
 								</div>
 								<div class="right">
@@ -732,7 +746,7 @@
 		margin: 0 !important;
 		text-overflow: ellipsis;
 		overflow: hidden;
-		padding-left: 1.5em
+		padding-left: 1.2em
 	}
 
 	.byline:before {
@@ -757,8 +771,8 @@
 		height: 1em;
 		position: absolute;
 		color: var(--color-tertiary);
-		top: 37px;
-		left: 102px;
+		top: 35px;
+		left: 90px;
 		z-index: 10;
 		background: center / 1em no-repeat;
 		background-image: url("/static/identity2.svg");
