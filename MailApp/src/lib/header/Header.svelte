@@ -23,7 +23,7 @@
 		isOpenAvatarPopup = true;
 	}
 
-	function logout() {
+	async function logout() {
 		console.log("Logout happened");
 		gatewayUrl = undefined;
 		keys = null;
@@ -33,7 +33,12 @@
 		$keyStore.inboxThreads = [];
 		$keyStore.isLoggedIn = false;
 		isOpenAvatarPopup = false;
-		backToInbox();
+
+		await window.arweaveWallet.disconnect();
+		
+		if ($page.path != "/") {
+			backToInbox();
+		}
 	}
 
 	function authenticateWithGateway() {
@@ -72,6 +77,10 @@
 			console.log(`chunkUploaded: ${uploader.uploadedChunks}/${uploader.totalChunks} %${uploader.pctComplete}`);
    			console.log(` lastResponseStats: ${uploader.lastResponseStatus}`);
 		}
+	}
+
+	async function doUpgradeQuery() {
+		console.log(window.location);
 	}
 
 	async function testAuth () {
@@ -137,13 +146,16 @@
 		</div>
 		<div slot="content">
 			<!-- <ModalItem imageUrl="{$page.path == "/" ? "" : "../"}gateway.svg" onClick={authenticateWithGateway}>
+				bundlr balance 89tR0-C1m3_sCWCoVCChg4gFYKdiH5_ZDyZpdJ2DDRw -h https://node1.bundlr.network -c arweave
+				bundlr fund 1000000000 -h https://node1.bundlr.network -w ~/arweave/arweave-key-89tR0-C1m3_sCWCoVCChg4gFYKdiH5_ZDyZpdJ2DDRw.json -c arweave
 				{#if gatewayUrl }
 				{gatewayUrl}
 				{:else}
 				Email gateway
 				{/if}
 			</ModalItem>  -->
-			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doTransaction}>Test Auth</ModalItem>
+			<!-- <ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doTransaction}>Test Auth</ModalItem>
+			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doUpgradeQuery}>Test Upgrade</ModalItem> -->
 			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}logout.svg" onClick={logout}>Log out</ModalItem>
 		</div>
 	</Modal>

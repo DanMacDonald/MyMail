@@ -43,11 +43,11 @@
 			}
 		} else if (keys != store.keys) {
             keys = store.keys;
-			isLoggedIn = true;
-			$keyStore.isLoggedIn = true;
             if (keys == null) {
                 $keyStore.inboxThreads = [];
             } else {
+				isLoggedIn = true;
+				$keyStore.isLoggedIn = true;
                 console.log("isLoadingMessages:" + isLoadingMessages)
                 if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
                     pageStartupLogic();
@@ -401,7 +401,7 @@
 			return;
 
 		localStorage.inboxThread = JSON.stringify(inboxThread);
-		goto("/message/viewThread");
+		goto("message/viewThread");
 	}
 
 	function handleInboxItemClick(inboxItem: InboxItem) {
