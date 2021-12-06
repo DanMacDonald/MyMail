@@ -22,6 +22,7 @@
 
 	let isEmail = false;
 	let isSendButtonActive = false;
+	let isSubmitting = false;
 	
 	function handleSubmit() {
 		if (isEmail) {
@@ -29,6 +30,7 @@
 		} else {
 			console.log("Submit");
 			submitWeavemail2();
+			isSubmitting = true;
 		}
 	}
 
@@ -53,6 +55,7 @@
 	async function submitWeavemail2() {
 		let address = "";
 		let wallet = null;
+		isSubmitting = true;
 		if ($keyStore.keys != null) {
 			wallet = JSON.parse($keyStore.keys);
 			address = await arweave.wallets.jwkToAddress(wallet);
@@ -86,7 +89,7 @@
             <div class="messageRow">
                 <textarea class="message" bind:value={message.body} placeholder="Type your message..."></textarea>
             </div>
-			<SubmitRow bind:isMessageReady={isSendButtonActive} bind:isEmail={isEmail} bind:amount={message.amount} ></SubmitRow>
+			<SubmitRow bind:isMessageReady={isSendButtonActive} bind:isEmail={isEmail} bind:amount={message.amount} bind:isSubmitting={isSubmitting}></SubmitRow>
         </form>
     </article>
     </div>

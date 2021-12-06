@@ -1,22 +1,26 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
     const dispatch = createEventDispatcher();
-    const submit = () => dispatch('submit');
+    const submit = () => { dispatch('submit'); };
 
+    export let isSubmitting:boolean = false;
     export let isMessageReady:boolean = false;
     export let isEmail:boolean = false;
     export let amount:number;
 </script>
 
-
 <div class="submitRow">
     <div class="footer">
     {#if isEmail}
-    <!-- TODO: support valid/invalid message states for email -->
+        <!-- TODO: support valid/invalid message states for email -->
         <input class="submitButton" type="submit" value="Send email">
     {:else}
         {#if isMessageReady}
-            <input class="submitButton myMail" on:click={submit} type="submit" value="Send Weavemail">
+            {#if isSubmitting}
+                <div class="submitButton disabled">Sending...</div>
+            {:else}
+                <input class="submitButton myMail" on:click={submit} type="submit" value="Send Weavemail">
+            {/if}
         {:else}
             <div class="submitButton disabled">Send Weavemail</div>
         {/if}
