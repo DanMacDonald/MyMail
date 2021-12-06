@@ -168,7 +168,7 @@ export async function getWeavemailTransactions(arweave, address: string): Promis
     const res2 = await arweave.api.post("/graphql", {
         query: `
         {
-            transactions(recipients: ["${address}"],
+            transactions(first: 50, recipients: ["${address}"],
                 tags: [
                     {
                         name: "App-Name",
@@ -199,8 +199,8 @@ export async function getWalletName(arweave, address) {
                     values: ["arweave-id"]
                 },
                 {
-                name: "Type",
-                values: ["name"]
+                    name: "Type",
+                    values: ["name"]
                 }
             ]
         ) {
@@ -221,6 +221,45 @@ export async function getWalletName(arweave, address) {
         const txid = response.data.transactions.edges[0].node.id;
         const tx = await arweave.transactions.get(txid);
         return tx.get("data", { decode: true, string: true });
+    }
+}
+
+export async function getLatestVersionTxid(arweave): Promise<string> {
+    let txid = window.location.pathname.split("/")[1];
+    let tx = await arweave.transactions.get(txid);
+    let owner = tx.owner_address;
+    const res2 = await arweave.api.post("/graphql", {
+        query: 
+        `{
+            transactions(owners:["${owner}"],
+                tags: [
+                    {
+                        name: "Type",
+                        values: ["manifest"]
+                    }
+                ]
+            ) {
+                edges {
+                    node {
+                        id
+                    }
+                }
+            }
+        }`,
+    });
+
+    const response = res2.data;
+
+    if (response.data.transactions.edges.length == 0) {
+        return null;
+    } else {
+        const newVersionTxid = response.data.transactions.edges[0].node.id;
+        console.log(`LatestVersion: ${newVersionTxid}`);
+        if (newVersionTxid == txid) {
+            return null; // if we're on the latest 
+        } else {
+            return newVersionTxid;
+        }
     }
 }
 
