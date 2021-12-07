@@ -1,4 +1,5 @@
 import * as B64js from "base64-js";
+import { query } from "./graphqlClient";
 
 export interface InboxItem {
 	id: number;
@@ -225,13 +226,28 @@ export async function getWalletName(arweave, address) {
 }
 
 export async function getLatestVersionTxid(arweave): Promise<string> {
+    console.log(`getLatestVersion: ${window.location.pathname}`);
+    console.log(window.location);
     let txid = window.location.pathname.split("/")[1];
-    let tx = await arweave.transactions.get(txid);
-    let owner = tx.owner_address;
-    const res2 = await arweave.api.post("/graphql", {
+    console.log(`txid: ${txid}`);
+    if (!txid) 
+        return "";
+    let tx = null;
+    try {
+        tx = await arweave.transactions.get(txid);
+    } catch(err) {
+        console.log(err);
+    }
+    console.log(`transaction: ${tx}`);
+    if (!tx)
+        return "";
+    let owner = tx.owner;
+    console.log(`owner: ${owner}`);
+    let address = await arweave.wallets.ownerToAddress(owner)
+    let queryObject = {
         query: 
         `{
-            transactions(owners:["${owner}"],
+            transactions(owners:["${address}"],
                 tags: [
                     {
                         name: "Type",
@@ -246,17 +262,19 @@ export async function getLatestVersionTxid(arweave): Promise<string> {
                 }
             }
         }`,
-    });
+    }
+    console.log(queryObject);
+    const res2 = await arweave.api.post("/graphql", queryObject);
 
     const response = res2.data;
 
     if (response.data.transactions.edges.length == 0) {
-        return null;
+        return "";
     } else {
         const newVersionTxid = response.data.transactions.edges[0].node.id;
         console.log(`LatestVersion: ${newVersionTxid}`);
         if (newVersionTxid == txid) {
-            return null; // if we're on the latest 
+            return ""; // if we're on the latest 
         } else {
             return newVersionTxid;
         }
@@ -277,7 +295,6 @@ export async function submitWeavemail(arweave, toAddress, subject, body, amount:
     }
 
     var content = await encryptMail(arweave, body, subject, pub_key)
-    console.log(content)
 
     var tx = await arweave.createTransaction({
         target: toAddress,
@@ -298,7 +315,6 @@ export async function submitWeavemail(arweave, toAddress, subject, body, amount:
 export async function getThreadId(inboxItem: InboxItem) : Promise<string> {
 
     // if there's no subject line, create a unique string from the sender+timestamp
-    console.log(inboxItem.subject)
     var subjectLine = inboxItem.subject || inboxItem.fromAddress + inboxItem.timestamp;
 
     // remove anything in square brackets

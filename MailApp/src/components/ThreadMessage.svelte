@@ -50,10 +50,10 @@
             <span class="from"> {inboxItem.fromName == inboxItem.fromAddress ? 'No name' : inboxItem.fromName}
                 <span class="to"> &lt;{inboxItem.fromAddress}&gt; </span>
             </span>
-            {#if  isCollapsed}
-                <div class="preview">{getMessagePreview()}</div>
-            {:else}
+            {#if !isCollapsed || inboxItem.isRecent}
                 <div class="to">To {inboxItem.toName}</div>
+            {:else}
+                <div class="preview">{getMessagePreview()}</div>
             {/if}
         </div>
         <div class="right">

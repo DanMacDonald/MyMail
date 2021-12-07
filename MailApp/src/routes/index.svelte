@@ -9,7 +9,7 @@
 	import { keyStore } from "$lib/keyStore";
 	import KeyDropper from "/src/components/KeyDropper.svelte";
 	import Arweave from "arweave";
-	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName, getThreadId, InboxThread } from "$lib/myMail";
+	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName, getThreadId, InboxThread, getLatestVersionTxid } from "$lib/myMail";
 	import type { InboxItem } from "$lib/myMail";
 	import { bufferTob64 } from "$lib/myMail";
 	import config from "$lib/arweaveConfig";
@@ -40,6 +40,7 @@
 			isLoggedIn = store.isLoggedIn;
 			if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
 				pageStartupLogic();
+				//getLatestVersionTxid(arweave);
 			}
 		} else if (keys != store.keys) {
             keys = store.keys;
@@ -182,7 +183,7 @@
 			})
 			_inboxThreads = threads;
 			$keyStore.inboxThreads = _inboxThreads;
-            console.log(_inboxThreads);
+            //(_inboxThreads);
 		});
 	}
 
@@ -289,7 +290,7 @@
 
 				inboxItem.threadId =  await getUniqueThreadId(inboxItem);
 
-				console.log(inboxItem);
+				//console.log(inboxItem);
 
 				return inboxItem;
 			}
@@ -299,7 +300,7 @@
 		weaveMailInboxItems.forEach((item) => {
 			if (item) result.push(item);
 		});
-		console.log(result);
+		//console.log(result);
 		return result;
 	}
 
@@ -383,7 +384,7 @@
 			let decryptString = await arweave.utils.bufferToString( 
 					await decryptMail(arweave, arweave.utils.b64UrlToBuffer(data), key)
 				);
-			console.log(decryptString);
+			//console.log(decryptString);
 			let mailParse = JSON.parse(decryptString);
 			return mailParse;
 		} else {

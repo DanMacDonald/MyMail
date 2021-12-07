@@ -6,7 +6,7 @@
 	import { onMount } from 'svelte';
 
 	import * as B64js from "base64-js";
-	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName } from "$lib/myMail";
+	import { getWeavemailTransactions, decryptMail, getPrivateKey, getWalletName, getLatestVersionTxid } from "$lib/myMail";
 	import Arweave from "arweave";
 	import { goto } from "$app/navigation";
 	import config from "$lib/arweaveConfig";
@@ -14,6 +14,8 @@
 	var arweave: any = Arweave.init(config);
 
 	let wallet: any = null;
+	let isNewVersion:boolean = false;
+	let isNewVersionSkipped:boolean = false;
 
 	let isOpenAvatarPopup: boolean = false;
 	$: keys = $keyStore.keys;
@@ -41,6 +43,38 @@
 		}
 	}
 
+	onMount(async () => {
+		console.log("getting latest version");
+		let latestVersion = await getLatestVersionTxid(arweave);
+		console.log("got latest version " + latestVersion);
+		let activeVersion = window.location.pathname.split("/")[1];
+		localStorage.latestVersion = latestVersion;
+		localStorage.activeVersion = activeVersion;
+		console.log(`activeVersion:${localStorage.activeVersion} latestVersion:${localStorage.latestVersion}`);
+		if (latestVersion && latestVersion != activeVersion) {
+			localStorage.latestVersion = latestVersion;
+			isNewVersion = true;
+			isNewVersionSkipped = false;
+		}
+	});
+
+	function unskipLatet() {
+		isNewVersionSkipped = false;
+	}
+
+	function skipLatest() {
+		localStorage.skippedVerstion = localStorage.latestVersion;
+		isNewVersionSkipped = true;
+		console.log(`Is skipping: ${isNewVersionSkipped}`);
+	}
+
+	function navigateToLatest() {
+		console.log(localStorage.latestVersion);
+		if (localStorage.latestVersion) {
+			window.location.href = `${window.location.protocol}//${window.location.host}/${localStorage.latestVersion}`;
+		}
+	}
+
 	function authenticateWithGateway() {
 		console.log(`Auth with gateway ${gatewayUrl}`);
 		if (gatewayUrl == undefined) {
@@ -57,8 +91,8 @@
 		b64UrlString.length % 4 == 0
 			? (padding = 0)
 			: (padding = 4 - (b64UrlString.length % 4));
-	return b64UrlString.concat("=".repeat(padding));
-		}
+		return b64UrlString.concat("=".repeat(padding));
+	}
 
 	function b64UrlToBuffer(b64UrlString: string): Uint8Array {
 		return new Uint8Array(B64js.toByteArray(b64UrlDecode(b64UrlString)));
@@ -77,10 +111,6 @@
 			console.log(`chunkUploaded: ${uploader.uploadedChunks}/${uploader.totalChunks} %${uploader.pctComplete}`);
    			console.log(` lastResponseStats: ${uploader.lastResponseStatus}`);
 		}
-	}
-
-	async function doUpgradeQuery() {
-		console.log(window.location);
 	}
 
 	async function testAuth () {
@@ -121,6 +151,15 @@
 	<div class="container">
 		<div class="corner left">
 			<div class="inboxButton" class:active={ $page.path != "/" } on:click={backToInbox} >Inbox</div>
+			{#if $page.path == "/"}
+				{#if isNewVersion}
+					{#if isNewVersionSkipped}
+						<div class = "upgradeFrame minmized" on:click={unskipLatet}>Update</div>
+					{:else}
+						<div class="upgradeFrame"><div class="updateLabel">Update Available</div><div class="updateButton" on:click={navigateToLatest} >Update</div> <div on:click={skipLatest} class="skipText">Skip</div></div>
+					{/if}
+				{/if}
+			{/if}
 			<!-- <a sveltekit:prefetch href="./search" class="search"> Search </a> -->
 			<!-- <a href="." class="search"> Search </a> -->
 		</div>
@@ -154,8 +193,8 @@
 				Email gateway
 				{/if}
 			</ModalItem>  -->
-			<!-- <ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doTransaction}>Test Auth</ModalItem>
-			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doUpgradeQuery}>Test Upgrade</ModalItem> -->
+			<!-- <ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doTransaction}>Test Auth</ModalItem> -->
+			<!-- <ModalItem imageUrl="{$page.path == "/" ? "" : "../"}plus.svg" onClick={doUpgradeQuery}>Test Upgrade</ModalItem> -->
 			<ModalItem imageUrl="{$page.path == "/" ? "" : "../"}logout.svg" onClick={logout}>Log out</ModalItem>
 		</div>
 	</Modal>
@@ -204,6 +243,54 @@
 		height :50%;
 	}
 
+	.upgradeFrame {
+		background: transparent;
+		border: solid 1px var(--color-secondary);
+		border-radius: 0.8rem;
+		padding: 0.1rem 0.5rem 0.4rem 0.5rem;
+		font-size: var(--font-size-x-small);
+		text-align: center;
+		color: var(--color-secondary);
+	}
+
+	.minmized {
+		cursor: pointer;
+	}
+
+	.updateLabel {
+		line-height: 1.3em;
+	}
+
+	.updateButton {
+		--base-space: 1.25em;
+		--quarter-space: calc(var(--base-space) / 4);
+		margin-right: var(--quarter-space) !important;
+		padding: 0.05em 0.5em;
+		text-align: center;
+		background: var(--color-secondary);
+		border-color: var(--color-secondary);
+		color: var(--color-almost-black);
+		display: inline-block;
+		margin: 0;
+		font-weight: 500;
+		text-decoration: none;
+		border-radius: 3rem;
+		white-space: nowrap;
+		box-sizing: border-box;
+		cursor: pointer;
+	}
+
+	.skipText {
+		color: var(--color-secondary);
+		font-size: var(--font-size-x-small);
+		display: inline-block;
+		cursor: pointer;
+	}
+
+	.skipText:hover {
+		text-decoration: underline;
+	}
+
 	.inboxButton {
 		--base-space: 1.25em;
 		--quarter-space: calc(var(--base-space) / 4);
@@ -223,6 +310,7 @@
 		border-radius: 3rem;
 		white-space: nowrap;
 		box-sizing: border-box;
+		cursor: pointer;
 	}
 
 	.inboxButton::before {
