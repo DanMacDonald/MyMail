@@ -87,6 +87,7 @@
 
 
     let isCollapsed = true;
+    let isSubmitting = false;
     let isPermanent = false;
     let promise = Promise.resolve();
     let isReplying = false;
@@ -114,6 +115,7 @@
 
     async function onSubmit() {
         console.log("submit requested");
+        isSubmitting = true;
 
         // Tidy up the response message of client side styles
         // so it's suitable for sending
@@ -229,7 +231,7 @@ border-inline-start: 1px solid rgba( 27, 39, 51, 0.15);">${message.body}</blockq
                 <!-- message reply body is injected to make sure it's not picking up svelt markup -->
             </div>
             <br/>
-            <div class="inputRow"><SubmitRow on:submit={onSubmit} bind:isMessageReady={isValid} bind:amount={arAmount} /></div>
+            <div class="inputRow"><SubmitRow on:submit={onSubmit} bind:isMessageReady={isValid} bind:amount={arAmount} bind:isSubmitting={isSubmitting} /></div>
         </article>
     </div>
 </section>
