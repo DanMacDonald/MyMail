@@ -1,3 +1,7 @@
+<script context="module">
+	let firstTime = true;
+</script>
+
 <script lang="ts">
 	export const prerender = true;
 
@@ -29,35 +33,38 @@
 	let wallet: any = null;
 	var arweave: any = Arweave.init(config);
 
-
     let keys = $keyStore.keys;
 	let isLoggedIn = $keyStore.isLoggedIn;
 	let _inboxThreads: InboxThread[] = [];
 	
-	keyStore.subscribe((store) => {
-		console.log(`subscribe changed ${isLoggedIn} ${store.isLoggedIn}`);
-		if (isLoggedIn !== store.isLoggedIn) {
-			isLoggedIn = store.isLoggedIn;
-			if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
-				pageStartupLogic();
-				//getLatestVersionTxid(arweave);
-			}
-		} else if (keys != store.keys) {
-            keys = store.keys;
-            if (keys == null) {
-                $keyStore.inboxThreads = [];
-            } else {
-				isLoggedIn = true;
-				$keyStore.isLoggedIn = true;
-                console.log("isLoadingMessages:" + isLoadingMessages)
-                if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
-                    pageStartupLogic();
-                } else {
-                    $keyStore.inboxThreads = $keyStore.weaveMailInboxThreads;
-                }
-            }
-        } 
-    });
+	if (firstTime) {
+		firstTime = false;
+		keyStore.subscribe((store) => {
+			console.log(`subscribe changed ${isLoggedIn} ${store.isLoggedIn}`);
+			if (isLoggedIn !== store.isLoggedIn) {
+				isLoggedIn = store.isLoggedIn;
+				if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
+					pageStartupLogic();
+					//getLatestVersionTxid(arweave);
+				}
+			} else if (keys != store.keys) {
+				keys = store.keys;
+				if (keys == null) {
+					$keyStore.inboxThreads = [];
+				} else {
+					isLoggedIn = true;
+					$keyStore.isLoggedIn = true;
+					console.log("isLoadingMessages:" + isLoadingMessages)
+					if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
+						pageStartupLogic();
+					} else {
+						$keyStore.inboxThreads = $keyStore.weaveMailInboxThreads;
+					}
+				}
+			} 
+		});
+	}
+	
 
 	onMount(async () => {
 		if ($sentMessage) fadeOutFlash();
@@ -78,8 +85,7 @@
 
         // Make sure we have a wallet initialized
         console.log("Wallet loaded");
-
-		promise = Promise.resolve($keyStore.inboxThreads);
+		promise = Promise.resolve(_inboxThreads);
         
         if (!$keyStore.inboxThreads || $keyStore.inboxThreads.length == 0) {
             isLoadingMessages = true;
@@ -87,7 +93,7 @@
             // We don't have any mailItems, use the loading promise to show "Waiting..."
             promise = getWeavemailItems()
                 .then(async weaveMailItems => {
-					await mergeInboxItems2(weaveMailItems);
+					await mergeInboxItems(weaveMailItems);
                     console.log("weavemail items loaded async");
                     isLoadingMessages = false;
 					$keyStore.weaveMailInboxThreads = _inboxThreads;
@@ -100,22 +106,11 @@
             getWeavemailItems()
                 .then(async weaveMailItems => {
                     //$keyStore.weaveMailInboxItems = weaveMailItems;
-                    await mergeInboxItems2(<InboxItem[]>weaveMailItems);
+                    await mergeInboxItems(<InboxItem[]>weaveMailItems);
 					$keyStore.weaveMailInboxThreads = _inboxThreads;
                     console.log("weavemail items loaded async");
                 })
         }
-
-        // if ($keyStore.gatewayUrl && $keyStore.gatewayUrl != null) {
-        //     getEmailInboxItems()
-        //         .then(emailInboxItems => {
-        //             //$keyStore.emailInboxItems = emailInboxItems;
-        //             mergeInboxItems(<InboxItem[]>emailInboxItems);
-        //             console.log("emails loaded async");
-        //         });
-        // } else {
-        //     console.log("Skipping emails")
-        // }
     }
 
 	async function getUniqueThreadId(inboxItem: InboxItem) {
@@ -130,7 +125,7 @@
 		return b64UrlHash;
 	}
 
-	async function mergeInboxItems2(newItems: InboxItem[]) {
+	async function mergeInboxItems(newItems: InboxItem[]) {
 		let inboxThreads: Record<string, InboxItem[]> = {};
 		let threadOwners: Record<string, string> = {};
 		for(let j=0; j<newItems.length; j++) {
@@ -187,38 +182,6 @@
 		});
 	}
 
-    async function getEmailInboxItems() {
-        let creds = {
-			emailAddress: "admin@pixelsamurai.com", 
-			password: "asdfd",
-		};
-
-		//console.log(JSON.stringify(creds));
-
-		const res = await fetch(`http://localhost:5000/Mail/inbox`, {
-			method: "POST", // *GET, POST, PUT, DELETE, etc.
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(creds),
-		});
-
-		// const res = await fetch('inbox.json');
-		const text = await res.text();
-
-		let parsedItems = <InboxItem[]> JSON.parse(text);
-		let emailInboxItems = parsedItems;
-		for (var item of emailInboxItems) {
-			item.timestamp = Date.parse(item.date);
-		}
-
-		if (res.ok) {
-			return emailInboxItems;
-		} else {
-			throw new Error(text);
-		}
-    }
-
 	async function getActiveAddress(wallet?) : Promise<string> {
 		if (wallet != null) {
 			return await arweave.wallets.jwkToAddress(wallet);
@@ -227,7 +190,7 @@
 		} 
 	}
 
-	async function getWeavemailItemsParallel() {
+	async function getWeavemailItems() {
 		var address = await getActiveAddress(wallet);
 		let json = await getWeavemailTransactions(arweave, address);
 		console.log(`${json.data.transactions.edges.length} to resolve`);
@@ -300,81 +263,53 @@
 		weaveMailInboxItems.forEach((item) => {
 			if (item) result.push(item);
 		});
-		//console.log(result);
-		return result;
-	}
 
-    async function getWeavemailItems(): Promise<InboxItem[]> {		
-
-		//if (wallet != null) {
-			return getWeavemailItemsParallel();
-		//}
-
-		var address = await getActiveAddress(wallet);
-		let json = await getWeavemailTransactions(arweave, address);
-		console.log(`${json.data.transactions.edges.length} to resolve`);
-
-		let weaveMailInboxItems : InboxItem[] = [];
-
-		let edges = json.data.transactions.edges;
-		for await (const edge of edges) {
-			let txid = edge.node.id;
-			var transaction = await arweave.transactions.get(txid).catch(err => {
-				console.log(`No Transaction found ${txid} - ${err}`);
-			});
-
-			if (!transaction) 
-				continue;
-
-			let timestamp = 0;
-			let appVersion = "";
-
-			// Parse timestamp info from the transaction
-			transaction.get("tags").forEach((tag) => {
-				let key = tag.get("name", { decode: true, string: true });
-				let value = tag.get("value", {
-					decode: true,
-					string: true,
-				});
-				if (key === "Unix-Time") timestamp = parseInt(value) * 1000;
-				if (key === "App-Version") appVersion = value;
-			});
-
-			var fromAddress = await arweave.wallets.ownerToAddress(transaction.owner);
-			var fromName =  await getWalletName(arweave, fromAddress);
-			var fee = arweave.ar.winstonToAr(transaction.reward);
-			var amount = arweave.ar.winstonToAr(transaction.quantity);
-			
-			console.log("requesting decruption " + txid);
-			let mailParse =  <any> await getMessageJSON(txid, wallet);
-
-			let inboxItem: InboxItem = {
-				toName: "You",
-				fromName: `${fromName}`,
+		if (result.length == 0) {
+			// Welcome message
+			let welcomeItem: InboxItem = {
 				toAddress: "",
-				fromAddress: `${fromAddress}`,
+				toName: "You",
+				fromName: `DMac`,
+				fromAddress: `89tR0-C1m3_sCWCoVCChg4gFYKdiH5_ZDyZpdJ2DDRw`,
 				date: "",
-				subject: mailParse.subject || "null",
+				subject: "Welcome to the Permaweb🐘!",
 				threadId: "",
 				id: 0,
 				isFlagged: false,
 				isRecent: false,
 				isSeen: true,
-				contentType: "weavemail",
 				fee: 0,
 				amount: 0,
-				appVersion: "",
-				timestamp: timestamp,
-				body: mailParse.body,
-				txid: txid
-			};
+				contentType: "weavemail",
+				timestamp: Math.round((new Date()).getTime() / 1000),
+				body: 
+`
+We're glad you're here 🎉
+</br></br>
+The app you're using now can never be removed, taken down, it's deployed forever on the permaweb🐘.
+</br></br>
+It's very early and we have big plans to develop this project to have full email funciontality and alongside encrypted onchain messages.
+</br></br>
+While we can't change this version of the app we can publish new version with new features⚡️. If you like the new features you can choose to use that version instead.
+This is the power of apps on the permaweb🐘, you are in control💪.
+</br></br>
+If you like what you see and are curious to learn more, <u>reply to this message</u> and let us know how you found us. We'll send you links to our community where you can learn more about our roadmap and share your on ideas for features you'd like to see.
+</br></br>
+Thanks for checking out our project 💌
+</br>
+&nbsp;&nbsp;-DMac
+`,
+				txid: "txid",
+				appVersion: ""
+			}
 
-			weaveMailInboxItems.push(inboxItem);
+			welcomeItem.threadId =  await getUniqueThreadId(welcomeItem);
+			result.push(welcomeItem);
 		}
 
-		console.log(weaveMailInboxItems);
-        return weaveMailInboxItems;
-    }
+		//console.log(result);
+		return result;
+	}
 
 	async function getMessageJSON(txid : string, wallet) : Promise<any> {
 
@@ -403,17 +338,6 @@
 
 		localStorage.inboxThread = JSON.stringify(inboxThread);
 		goto("message/viewThread");
-	}
-
-	function handleInboxItemClick(inboxItem: InboxItem) {
-		// If we're selecting some text on the page, give the user the chance to copy it before opening the item
-		// until we have contact managment, this ends up being the best way to copy a sender address
-		var selection = window.getSelection();
-		if (selection.toString())
-			return;
-		
-		localStorage.inboxItem = JSON.stringify(inboxItem);
-		goto("message/view");
 	}
 
 	function handleNewMessageClick() {
