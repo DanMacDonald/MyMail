@@ -36,6 +36,7 @@
     let keys = $keyStore.keys;
 	let isLoggedIn = $keyStore.isLoggedIn;
 	let _inboxThreads: InboxThread[] = [];
+	let welcomeMessage: InboxItem;
 	
 	if (firstTime) {
 		firstTime = false;
@@ -190,6 +191,15 @@
 				if (unreadThreads[newThread.id]) {
 					newThread.isSeen = false;
 				}
+
+				// Really brute force logic for controlling the isSeen flag on the welcome item
+				if (welcomeMessage && newThread.items[0].threadId == welcomeMessage.threadId && newThread.items.length == 1) {
+					if (localStorage.getItem("welcomeMessageSeen") != null) {
+						newThread.isSeen = true;
+					} else {
+						newThread.isSeen = false;
+					}
+				}
 			})
 		).then(() => {
 			threads.sort((a,b) => {
@@ -332,6 +342,7 @@ Thanks for checking out our project 💌
 			}
 
 			welcomeItem.threadId =  await getUniqueThreadId(welcomeItem);
+			welcomeMessage = welcomeItem;
 			result.push(welcomeItem);
 		}
 
@@ -374,6 +385,13 @@ Thanks for checking out our project 💌
 			}
 			return b.timestamp - a.timestamp;
 		})
+
+		// More brute force welcome message logic, sorry!
+		// All this goes away with inbox nodes
+		if (welcomeMessage && inboxThread.items.length == 1 && inboxThread.items[0].threadId == welcomeMessage.threadId) {
+			localStorage.welcomeMessageSeen = true;
+		}
+
 		localStorage.inboxThread = JSON.stringify(inboxThread);
 		goto("message/viewThread");
 	}
