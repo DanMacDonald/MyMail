@@ -17,7 +17,8 @@
     }
 
     function processHyperlinks(body:string): string {
-        const links = /(http:\/\/|https:\/\/)[^\s]+[\w]/gm
+        const links = /(https?|ftp|file):\/\/[-\w+&@#\/%?=~_|!:,.;]*[-\w+&@#\/%=~_|]/gm
+
         body = body.replace(links, `<a href="$&" target="_blank">$&</a>`);
         return body;
     }
