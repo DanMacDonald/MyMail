@@ -347,6 +347,11 @@ Thanks for checking out our project 💌
 	function fadeOutFlash() {
 		$sentMessage = false;
 	}
+
+	function onLogin() {
+		_inboxThreads = [];
+		$keyStore.isLoggedIn = true;
+	}
 </script>
 
 <svelte:head>
@@ -354,7 +359,7 @@ Thanks for checking out our project 💌
 </svelte:head>
 <section>
 	{#if $keyStore.isLoggedIn == false}
-		<KeyDropper />
+		<KeyDropper on:login={onLogin} />
 	{:else}
 		{#if $sentMessage}
 			<div out:fade={{ delay: 1300, duration: 400 }} class="flashRow">

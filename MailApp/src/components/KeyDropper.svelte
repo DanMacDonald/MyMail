@@ -1,5 +1,8 @@
 <script lang="ts">
     import { keyStore } from '$lib/keyStore';
+    import { createEventDispatcher } from 'svelte';
+    const dispatch = createEventDispatcher();
+    const onLoggedIn = () => { dispatch('login'); };
 
     function onChangedHandler(event: Event) {
         let jwk = (<HTMLInputElement>event.target).files[0];
@@ -7,12 +10,13 @@
         reader.readAsText(jwk);
         reader.onload = () => {
             $keyStore.keys = reader.result.toString();;
+            onLoggedIn();
         };
     }
 
     async function onARConnectLogin() {
         await window.arweaveWallet.connect(["DECRYPT", "ENCRYPT", "ACCESS_ADDRESS", "SIGN_TRANSACTION", "ACCESS_PUBLIC_KEY" ]);
-        $keyStore.isLoggedIn = true;
+        onLoggedIn();
     }
 </script>
 
