@@ -126,6 +126,14 @@
 	}
 
 	async function mergeInboxItems(newItems: InboxItem[]) {
+		// Get the most recent timestamp from existing threads
+		let mostRecentTimestamp = 0;
+		for(let i = 0; i < _inboxThreads.length; i++) {
+			const thread = _inboxThreads[i];
+			if (thread.timestamp > mostRecentTimestamp && thread.isSeen)
+				mostRecentTimestamp = thread.timestamp;
+		}
+
 		let inboxThreads: Record<string, InboxItem[]> = {};
 		let threadOwners: Record<string, string> = {};
 		for(let j=0; j<newItems.length; j++) {
@@ -171,6 +179,8 @@
 				// Override the last items recent flag so it expands its message body in the thread view
 				newThread.items[newThread.items.length-1].isRecent = true;
 				threads.push(newThread);
+				if(newThread.timestamp > mostRecentTimestamp)
+					newThread.isSeen = false;
 			})
 		).then(() => {
 			threads.sort((a,b) => {
@@ -336,6 +346,7 @@ Thanks for checking out our project 💌
 		if (selection.toString())
 			return;
 
+		inboxThread.isSeen = true;
 		localStorage.inboxThread = JSON.stringify(inboxThread);
 		goto("message/viewThread");
 	}
