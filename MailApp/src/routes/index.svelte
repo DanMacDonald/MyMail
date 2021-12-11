@@ -85,7 +85,6 @@
 
         // Make sure we have a wallet initialized
         console.log("Wallet loaded");
-		promise = Promise.resolve(_inboxThreads);
         
         if (!$keyStore.inboxThreads || $keyStore.inboxThreads.length == 0) {
             isLoadingMessages = true;
@@ -102,13 +101,16 @@
                 });
         } else {
 			_inboxThreads = $keyStore.inboxThreads;
+			promise = Promise.resolve(_inboxThreads);
             // Don't use the loading promise here, we want to load these in the background.
             getWeavemailItems()
                 .then(async weaveMailItems => {
                     //$keyStore.weaveMailInboxItems = weaveMailItems;
                     await mergeInboxItems(<InboxItem[]>weaveMailItems);
-					$keyStore.weaveMailInboxThreads = _inboxThreads;
-                    console.log("weavemail items loaded async");
+					if($keyStore.isLoggedIn) {
+						$keyStore.weaveMailInboxThreads = _inboxThreads;
+						console.log("weavemail items loaded async");
+					}
                 })
         }
     }
@@ -127,12 +129,19 @@
 
 	async function mergeInboxItems(newItems: InboxItem[]) {
 		// Get the most recent timestamp from existing threads
-		let mostRecentTimestamp = 0;
+		let mostRecentTimestamp = localStorage.mostRecentTimestamp ? parseInt(localStorage.mostRecentTimestamp) : 0;
+		console.log(localStorage);
+
+		let unreadThreads: Record<string, boolean> = {};
 		for(let i = 0; i < _inboxThreads.length; i++) {
 			const thread = _inboxThreads[i];
 			if (thread.timestamp > mostRecentTimestamp && thread.isSeen)
 				mostRecentTimestamp = thread.timestamp;
+
+			unreadThreads[thread.id] = !thread.isSeen;			
 		}
+
+		console.log(unreadThreads);
 
 		let inboxThreads: Record<string, InboxItem[]> = {};
 		let threadOwners: Record<string, string> = {};
@@ -179,16 +188,33 @@
 				// Override the last items recent flag so it expands its message body in the thread view
 				newThread.items[newThread.items.length-1].isRecent = true;
 				threads.push(newThread);
+
 				if(newThread.timestamp > mostRecentTimestamp)
 					newThread.isSeen = false;
+
+				if (unreadThreads[newThread.id]) {
+					newThread.isSeen = false;
+					console.log(`setting threadId:${newThread.id} to isSeen=false`);
+				}
+				console.log(`newThread: ${newThread.id} isSeen:${newThread.isSeen}`);
 			})
 		).then(() => {
 			threads.sort((a,b) => {
+				if (a.isSeen != b.isSeen) {
+					if (a.isSeen == false) 
+						return -1;
+					else
+						return 1;
+				}
 				return b.timestamp - a.timestamp;
-			})
+			});
+			
 			_inboxThreads = threads;
 			$keyStore.inboxThreads = _inboxThreads;
-            //(_inboxThreads);
+			if (_inboxThreads[0] && _inboxThreads[0].isSeen)
+				localStorage.mostRecentTimestamp = mostRecentTimestamp;
+			
+           // console.log(_inboxThreads);
 		});
 	}
 
@@ -347,6 +373,15 @@ Thanks for checking out our project 💌
 			return;
 
 		inboxThread.isSeen = true;
+		_inboxThreads.sort((a,b) => {
+			if (a.isSeen != b.isSeen) {
+				if (a.isSeen == false) 
+					return -1;
+				else
+					return 1;
+			}
+			return b.timestamp - a.timestamp;
+		})
 		localStorage.inboxThread = JSON.stringify(inboxThread);
 		goto("message/viewThread");
 	}

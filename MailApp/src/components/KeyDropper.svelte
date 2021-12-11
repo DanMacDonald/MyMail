@@ -1,6 +1,7 @@
 <script lang="ts">
     import { keyStore } from '$lib/keyStore';
     import { createEventDispatcher } from 'svelte';
+
     const dispatch = createEventDispatcher();
     const onLoggedIn = () => { dispatch('login'); };
 
@@ -33,7 +34,7 @@
         or use
     </div>
     <button on:click={onARConnectLogin} class="arconnect">
-        ARConnect to login
+        ArConnect to login
     </button>
 </section>
 
