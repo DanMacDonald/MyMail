@@ -16,6 +16,12 @@
         return "";
     }
 
+    function processHyperlinks(body:string): string {
+        const links = /(http:\/\/|https:\/\/)[^\s]+[\w]/gm
+        body = body.replace(links, `<a href="$&" target="_blank">$&</a>`);
+        return body;
+    }
+
     function saveToArweave() {
         isPermanent = true;
         let milliseconds = 2000;
@@ -64,11 +70,11 @@
     <div class="content">
         <div class="body">
             {#if inboxItem.contentType == "multipart/alternative"}
-                {@html decodeURI(inboxItem.body)}
+                {@html processHyperlinks(decodeURI(inboxItem.body))}
             {:else if inboxItem.contentType == "weavemail"}
-                {@html inboxItem.body}
+                {@html processHyperlinks(inboxItem.body)}
             {:else}
-                <pre>{decodeURI(inboxItem.body)}</pre>
+                <pre>{processHyperlinks(decodeURI(inboxItem.body))}</pre>
             {/if}
         </div>
     </div>
