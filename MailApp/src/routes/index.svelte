@@ -57,8 +57,6 @@
 					console.log("isLoadingMessages:" + isLoadingMessages)
 					if ($keyStore.weaveMailInboxThreads.length == 0 && !isLoadingMessages) {
 						pageStartupLogic();
-					} else {
-						$keyStore.inboxThreads = $keyStore.weaveMailInboxThreads;
 					}
 				}
 			} 
@@ -93,7 +91,7 @@
             promise = getWeavemailItems()
                 .then(async weaveMailItems => {
 					await mergeInboxItems(weaveMailItems);
-                    console.log("weavemail items loaded async");
+                    console.log("weavemail items loaded async at STARTUP");
                     isLoadingMessages = false;
 					$keyStore.weaveMailInboxThreads = _inboxThreads;
 
@@ -109,7 +107,7 @@
                     await mergeInboxItems(<InboxItem[]>weaveMailItems);
 					if($keyStore.isLoggedIn) {
 						$keyStore.weaveMailInboxThreads = _inboxThreads;
-						console.log("weavemail items loaded async");
+						console.log("weavemail items BACKGROUND loaded async");
 					}
                 })
         }
@@ -130,7 +128,6 @@
 	async function mergeInboxItems(newItems: InboxItem[]) {
 		// Get the most recent timestamp from existing threads
 		let mostRecentTimestamp = localStorage.mostRecentTimestamp ? parseInt(localStorage.mostRecentTimestamp) : 0;
-		console.log(localStorage);
 
 		let unreadThreads: Record<string, boolean> = {};
 		for(let i = 0; i < _inboxThreads.length; i++) {
@@ -140,8 +137,6 @@
 
 			unreadThreads[thread.id] = !thread.isSeen;			
 		}
-
-		console.log(unreadThreads);
 
 		let inboxThreads: Record<string, InboxItem[]> = {};
 		let threadOwners: Record<string, string> = {};
@@ -189,14 +184,12 @@
 				newThread.items[newThread.items.length-1].isRecent = true;
 				threads.push(newThread);
 
-				if(newThread.timestamp > mostRecentTimestamp)
+				if(newThread.timestamp > mostRecentTimestamp && mostRecentTimestamp > 0)
 					newThread.isSeen = false;
 
 				if (unreadThreads[newThread.id]) {
 					newThread.isSeen = false;
-					console.log(`setting threadId:${newThread.id} to isSeen=false`);
 				}
-				console.log(`newThread: ${newThread.id} isSeen:${newThread.isSeen}`);
 			})
 		).then(() => {
 			threads.sort((a,b) => {
@@ -208,11 +201,10 @@
 				}
 				return b.timestamp - a.timestamp;
 			});
-			
 			_inboxThreads = threads;
 			$keyStore.inboxThreads = _inboxThreads;
 			if (_inboxThreads[0] && _inboxThreads[0].isSeen)
-				localStorage.mostRecentTimestamp = mostRecentTimestamp;
+				localStorage.mostRecentTimestamp = mostRecentTimestamp.toString();
 			
            // console.log(_inboxThreads);
 		});
@@ -396,7 +388,9 @@ Thanks for checking out our project 💌
 
 	function onLogin() {
 		_inboxThreads = [];
+		promise = null;
 		$keyStore.isLoggedIn = true;
+		pageStartupLogic();
 	}
 </script>
 
