@@ -152,17 +152,6 @@
 		})
     }
 
-    function syncHeight() {
-        // this resize wont work when the static pages are served from a different
-        // origin than the webservice -DMac
-        try {
-            this.style.height = `${this.contentWindow.document.body.offsetHeight}px`;
-        } catch {
-            console.log(`StyleHeight:${this.style.height}`);
-            this.style.height = "2690px";
-        }
-    }
-
     onMount(async () => {
         console.log(`contentType:${inboxItem.contentType}`);
         markMessageAsSeen(inboxItem);
