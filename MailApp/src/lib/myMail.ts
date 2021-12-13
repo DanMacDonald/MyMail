@@ -1,6 +1,4 @@
 import * as B64js from "base64-js";
-import { query } from "./graphqlClient";
-
 export interface InboxItem {
 	id: number;
 	txid: string;

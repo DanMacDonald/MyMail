@@ -6,6 +6,10 @@ export interface Locals {
 	userid: string;
 }
 
+/**
+ * This is still used by viewThread.svelte but it should totally be refactored
+ * out to use the InboxItem interface in MyMail.ts (same for write.svelte!)
+ */
 export interface Message {
 	id: number;
 	body: string;
@@ -19,9 +23,4 @@ export interface Message {
 	txid: string;
 	appVersion: string;
 	timestamp: number;
-}
-
-export interface GraphqlQuery {
-	query: DocumentNode | string;
-	variables: Record<string, any> | null;
 }
